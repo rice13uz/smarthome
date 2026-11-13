@@ -132,7 +132,9 @@ form.add[hidden]{display:none}
 .empty{color:var(--sub2);font-size:14px;text-align:center;padding:18px 0}
 .card{background:var(--card);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;min-height:0}
 .chead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.chead h2{font-size:17px;font-weight:700}
+.chead h2{font-size:17px;font-weight:700;white-space:nowrap}
+.chead .badge,.chead .pill{white-space:nowrap;flex:none}
+.shop .chead .pill{padding:0 12px;font-size:13px}
 .chead .sp{flex:1}
 .env{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .env>div{background:rgba(0,0,0,.2);border-radius:16px;padding:10px 16px;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:4px}
@@ -185,6 +187,16 @@ form.add[hidden]{display:none}
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(60,60,68,.97);color:#fff;padding:12px 22px;border-radius:99px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* 幅が少し狭いとき（iPad mini の横向き 1133 など）は、上の段を小さくまとめる */
+@media (max-width:1240px) and (min-width:981px){
+  header{gap:14px}
+  #time{font-size:50px}
+  #chips{flex-wrap:nowrap;gap:8px}
+  .chip{height:48px;padding:0 12px 0 8px;gap:8px}
+  .chip .ci{width:32px;height:32px;font-size:15px}
+  .chip b{display:none}
+  .chip span{font-size:14px;white-space:nowrap}
+}
 /* 縦が狭いとき（2560×1440 タブレットでアドレスバーが出ているときなど）は詰めて表示 */
 @media (max-height:700px) and (min-width:981px){
   body{padding:12px 18px;grid-template-rows:76px 1fr;gap:8px}
@@ -744,6 +756,12 @@ function showWeather(w, isLive){
   $("#wBadge").textContent = isLive ? "更新 " + new Date().toTimeString().slice(0,5) : "見本";
   $("#wBadge").classList.toggle("live", isLive);
 }
+// 返事が来ないまま止まらないよう、15秒で打ち切る
+function fetchT(url, opt = {}, ms = 15000){
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+  return fetch(url, {...opt, signal:c.signal}).finally(() => clearTimeout(t));
+}
+let wRetry = null, aRetry = null;
 const MOCK_WEATHER = {code:1, temp:18, hum:55, max:21, min:12, pop:10};
 async function loadWeather(){
   if (!cfg.weather || cfg.lat==="" || cfg.lon===""){ showWeather(MOCK_WEATHER, false); return; }
@@ -751,11 +769,14 @@ async function loadWeather(){
     const u = `https://api.open-meteo.com/v1/forecast?latitude=${cfg.lat}&longitude=${cfg.lon}`
       + `&current=temperature_2m,relative_humidity_2m,weather_code`
       + `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=1&timezone=auto`;
-    const r = await fetch(u); if (!r.ok) throw 0;
+    const r = await fetchT(u); if (!r.ok) throw 0;
     const j = await r.json();
     showWeather({code:j.current.weather_code, temp:j.current.temperature_2m, hum:j.current.relative_humidity_2m,
       max:j.daily.temperature_2m_max[0], min:j.daily.temperature_2m_min[0], pop:j.daily.precipitation_probability_max[0]}, true);
-  }catch(e){ showWeather(MOCK_WEATHER, false); $("#wDesc").textContent = "取得できません（見本）"; }
+  }catch(e){
+    showWeather(MOCK_WEATHER, false); $("#wDesc").textContent = "取得できません（見本）";
+    clearTimeout(wRetry); wRetry = setTimeout(loadWeather, 60*1000);   // 1分後にやり直す
+  }
 }
 loadWeather(); setInterval(loadWeather, 30*60*1000);
 
@@ -777,7 +798,7 @@ async function loadAlerts(){
   const box = $("#wAlert"), a = cfg.alert;
   if (!a || !a.code){ box.hidden = true; $("#wLine3").hidden = false; return; }
   try{
-    const r = await fetch(`https://www.jma.go.jp/bosai/warning/data/r8/${a.office}.json`, {cache:"no-store"});
+    const r = await fetchT(`https://www.jma.go.jp/bosai/warning/data/r8/${a.office}.json`, {cache:"no-store"});
     if (!r.ok) throw new Error(r.status);
     const j = await r.json(), arr = Array.isArray(j) ? j : [j];
     const map = {}, heads = []; let at = "";
@@ -799,6 +820,7 @@ async function loadAlerts(){
   }catch(e){
     alertNow = {list:[], head:"", at:""};
     box.innerHTML = `<span class="al err">警報：取得できません</span>`; box.hidden = false; $("#wLine3").hidden = true;
+    clearTimeout(aRetry); aRetry = setTimeout(loadAlerts, 60*1000);   // 1分後にやり直す
   }
 }
 $("#wAlert").addEventListener("click", () => {
