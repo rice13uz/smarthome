@@ -3,17 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0c0e14">
+<meta name="theme-color" content="#ece1cf">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>わが家</title>
 <style>
 :root{
-  --text:#f5f5f7; --sub:rgba(235,235,245,.6); --sub2:rgba(235,235,245,.35);
-  --tile:rgba(44,44,50,.72); --tileOn:rgba(245,245,247,.96); --card:rgba(30,30,36,.7);
-  --line:rgba(255,255,255,.08);
-  --yellow:#ffd60a; --orange:#ff9f0a; --blue:#0a84ff; --cyan:#64d2ff; --green:#30d158; --red:#ff453a; --purple:#bf5af2; --teal:#40c8e0;
+  /* ベージュ基調（2026-11-14） */
+  --text:#3d3229; --sub:rgba(61,50,41,.62); --sub2:rgba(61,50,41,.4);
+  --tile:rgba(214,198,173,.42); --tileOn:#ffffff; --card:rgba(255,251,244,.72);
+  --line:rgba(61,50,41,.1); --soft:rgba(61,50,41,.07); --press:rgba(61,50,41,.14); --panel:#fbf7f0;
+  --shadow:0 4px 14px rgba(120,90,50,.14);
+  --yellow:#e8b830; --orange:#d9822b; --blue:#5b8fb9; --cyan:#3f9db0; --green:#5c9e6e; --red:#cf5848; --purple:#9a6fb0; --teal:#4f9e9a;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;color:var(--text)}
@@ -21,16 +23,16 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Yu Gothic UI","Meiryo",sans-serif;
   /* 壁紙（画像を使わずグラデーションだけで軽く） */
   background:
-    radial-gradient(ellipse at 15% 0%, #4a3a78 0, transparent 55%),
-    radial-gradient(ellipse at 100% 100%, #17506a 0, transparent 55%),
-    radial-gradient(ellipse at 60% 50%, #2a1f3d 0, transparent 60%),
-    #0c0e14;
+    radial-gradient(ellipse at 10% 0%, #fbf5ea 0, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, #dcc7a8 0, transparent 60%),
+    radial-gradient(ellipse at 70% 30%, #f1e6d4 0, transparent 60%),
+    #ece1cf;
   height:100vh;height:100dvh;overflow:hidden;padding:18px 22px;
   display:grid;grid-template-rows:96px 1fr;gap:12px;
   user-select:none;-webkit-user-select:none;
 }
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation;text-align:inherit}
-.badge{font-size:12px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.1);color:var(--sub)}
+.badge{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--soft);color:var(--sub)}
 .badge.live{color:var(--green)}
 
 /* ===== 上部 ===== */
@@ -53,16 +55,16 @@ header{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;
 #wAlert{display:flex;gap:4px;flex-wrap:nowrap;max-width:300px;overflow:hidden}
 #wAlert[hidden]{display:none}
 .al{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;line-height:1.5}
-.al.l20{background:#ffd60a;color:#1c1c1e}
-.al.l30{background:#ff453a;color:#fff}
-.al.l40{background:#bf5af2;color:#fff}
-.al.l50{background:#000;color:#fff;box-shadow:0 0 0 2px #bf5af2 inset}
-.al.err{background:rgba(255,255,255,.12);color:var(--sub)}
+.al.l20{background:#f2c53d;color:#3d3229}
+.al.l30{background:#d64535;color:#fff}
+.al.l40{background:#8e4fb3;color:#fff}
+.al.l50{background:#2b1f33;color:#fff;box-shadow:0 0 0 2px #b77bdb inset}
+.al.err{background:var(--soft);color:var(--sub)}
 .alist{list-style:none;margin:6px 0 10px}
 .alist li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:16px}
 .alist li .al{font-size:14px}
-.iconbtn{width:52px;height:52px;border-radius:50%;background:var(--card);font-size:22px;display:grid;place-items:center}
-.iconbtn:active{background:rgba(255,255,255,.2)}
+.iconbtn{width:52px;height:52px;border-radius:50%;background:var(--card);font-size:22px;display:grid;place-items:center;box-shadow:var(--shadow)}
+.iconbtn:active{background:var(--press)}
 
 /* ===== 本体 ===== */
 main{display:grid;grid-template-columns:1.9fr 1fr;gap:20px;min-height:0}
@@ -71,7 +73,7 @@ main{display:grid;grid-template-columns:1.9fr 1fr;gap:20px;min-height:0}
 .ttl h1{font-size:30px;font-weight:800;letter-spacing:.5px}
 .ttl .sp{flex:1}
 .pill{height:40px;padding:0 16px;border-radius:99px;background:var(--card);font-size:14px;font-weight:600}
-.pill:active{background:rgba(255,255,255,.2)}
+.pill:active{background:var(--press)}
 .lbl{font-size:16px;font-weight:700;margin:10px 2px 8px;display:flex;justify-content:space-between;align-items:baseline}
 .lbl small{font-size:12px;color:var(--sub2);font-weight:500}
 
@@ -79,17 +81,15 @@ main{display:grid;grid-template-columns:1.9fr 1fr;gap:20px;min-height:0}
 .scene{height:66px;border-radius:18px;background:var(--tile);display:flex;align-items:center;gap:10px;padding:0 12px;font-size:16px;font-weight:600;transition:background .15s,color .15s,transform .1s}
 .scene .ic{width:40px;height:40px;font-size:20px}
 .scene:active{transform:scale(.97)}
-.scene.flash{background:var(--tileOn);color:#1c1c1e}
+.scene.flash{background:var(--tileOn);box-shadow:var(--shadow)}
 
 #devices{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(3,1fr);gap:10px}
 .tile{border-radius:20px;background:var(--tile);padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;min-height:0;transition:background .15s,transform .12s;touch-action:manipulation}
 .tile:active{transform:scale(.97)}
-.tile.on{background:var(--tileOn);color:#1c1c1e}
+.tile.on{background:var(--tileOn);box-shadow:var(--shadow)}
 .tile{position:relative}
-.star{position:absolute;top:6px;right:6px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.28);color:#ffd60a;font-size:18px;display:grid;place-items:center}
-.tile.on .star{background:rgba(0,0,0,.08);color:#c79a00}
-.stage{position:absolute;top:44px;right:6px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(255,159,10,.25);color:#ffb340}
-.tile.on .stage{color:#a35a00}
+.star{position:absolute;top:6px;right:6px;width:36px;height:36px;border-radius:50%;background:var(--soft);color:#c99a1e;font-size:18px;display:grid;place-items:center}
+.stage{position:absolute;top:44px;right:6px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(217,130,43,.18);color:#a35a00}
 /* 日常用：タイルを大きく */
 body.daily .tile{padding:16px 18px}
 body.daily .ic{width:52px;height:52px;font-size:26px}
@@ -98,30 +98,29 @@ body.daily .tstat{font-size:15px}
 body.daily .admonly{display:none!important}
 body.admin .dailyonly{display:none!important}
 .modepill{background:var(--blue);color:#fff}
-.ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:21px;background:rgba(255,255,255,.12);flex:none}
-.ic.gray{filter:grayscale(1);opacity:.7}
+.ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:21px;background:var(--soft);flex:none}
+.ic.gray{filter:grayscale(1);opacity:.6}
 .tname{font-size:15px;font-weight:700;line-height:1.25}
 .tstat{font-size:13px;color:var(--sub);margin-top:2px;font-weight:500}
-.tile.on .tstat{color:#6e6e73}
-.tile .bar{height:5px;border-radius:9px;background:rgba(0,0,0,.1);margin-top:10px;overflow:hidden}
+.tile .bar{height:5px;border-radius:9px;background:var(--soft);margin-top:10px;overflow:hidden}
 .tile .bar i{display:block;height:100%;background:var(--orange);border-radius:9px}
 
 /* 右側 */
 .right{display:grid;grid-template-rows:auto 1fr;gap:16px;min-height:0}
 /* 買い物リスト */
 .shop .add{display:flex;gap:8px;margin-bottom:8px}
-#shopIn{flex:1;min-width:0;height:46px;border-radius:12px;border:0;background:rgba(0,0,0,.25);color:var(--text);font:inherit;font-size:17px;padding:0 12px;outline:none;user-select:text;-webkit-user-select:text}
+#shopIn{flex:1;min-width:0;height:46px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.8);color:var(--text);font:inherit;font-size:17px;padding:0 12px;outline:none;user-select:text;-webkit-user-select:text}
 #shopIn:focus{box-shadow:0 0 0 2px rgba(48,209,88,.6)}
 .addbtn{width:46px;height:46px;border-radius:12px;background:var(--green);color:#fff;font-size:26px;text-align:center;flex:none}
 .micbtn{flex:1;min-width:0;height:52px;border-radius:14px;background:var(--green);color:#fff;font-size:18px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
 .micbtn.rec{background:var(--red)}
-.addbtn.kb{background:rgba(255,255,255,.12);font-size:20px;height:52px;width:52px}
-.addbtn.kb.sel{background:#f5f5f7}
+.addbtn.kb{background:var(--soft);font-size:20px;height:52px;width:52px}
+.addbtn.kb.sel{background:#fff;box-shadow:var(--shadow)}
 form.add[hidden]{display:none}
 #freq{display:flex;gap:6px;overflow-x:auto;margin-bottom:6px;scrollbar-width:none;flex:none}
 #freq::-webkit-scrollbar{display:none}
-.fq{height:34px;padding:0 12px;border-radius:99px;background:rgba(255,255,255,.1);font-size:14px;white-space:nowrap;flex:none}
-.fq:active{background:rgba(48,209,88,.4)}
+.fq{height:34px;padding:0 12px;border-radius:99px;background:var(--soft);font-size:14px;white-space:nowrap;flex:none}
+.fq:active{background:rgba(92,158,110,.35)}
 #shopList{flex:1;min-height:0;overflow-y:auto;list-style:none}
 #shopList li{display:flex;align-items:center;gap:10px;min-height:46px;border-bottom:1px solid var(--line);cursor:pointer}
 .ck{width:28px;height:28px;border-radius:50%;border:2px solid var(--sub2);flex:none;display:grid;place-items:center;font-size:15px;color:#fff}
@@ -130,53 +129,53 @@ form.add[hidden]{display:none}
 #shopList li.done .nm{color:var(--sub2);text-decoration:line-through}
 #shopList .del{width:40px;height:40px;color:var(--sub2);font-size:16px;text-align:center;flex:none}
 .empty{color:var(--sub2);font-size:14px;text-align:center;padding:18px 0}
-.card{background:var(--card);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;min-height:0}
+.card{background:var(--card);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;min-height:0;box-shadow:var(--shadow)}
 .chead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .chead h2{font-size:17px;font-weight:700;white-space:nowrap}
 .chead .badge,.chead .pill{white-space:nowrap;flex:none}
 .shop .chead .pill{padding:0 12px;font-size:13px}
 .chead .sp{flex:1}
 .env{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.env>div{background:rgba(0,0,0,.2);border-radius:16px;padding:10px 16px;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:4px}
+.env>div{background:rgba(255,255,255,.6);border-radius:16px;padding:10px 16px;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:4px}
 .env small{width:100%;font-size:14px;color:var(--sub);font-weight:600}
 .env b{font-size:54px;font-weight:300;line-height:1.1;font-variant-numeric:tabular-nums}
 .env span{font-size:18px;color:var(--sub)}
 .env .t b{color:var(--orange)} .env .h b{color:var(--cyan)}
 
 /* ===== 詳細シート・モーダル ===== */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+.modal{position:fixed;inset:0;background:rgba(60,45,30,.35);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
 .modal.show{display:flex}
-.sheet{background:#1c1c22;border-radius:28px;padding:22px 26px 26px;width:min(560px,100%);max-height:100%;overflow:auto}
+.sheet{background:var(--panel);box-shadow:0 10px 40px rgba(60,45,30,.25);border-radius:28px;padding:22px 26px 26px;width:min(560px,100%);max-height:100%;overflow:auto}
 .shead{display:flex;align-items:center;gap:14px;margin-bottom:18px}
 .shead .nm{font-size:22px;font-weight:700}
 .shead .st{font-size:15px;color:var(--sub)}
 .shead .sp{flex:1}
-.xbtn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);font-size:18px;display:grid;place-items:center}
+.xbtn{width:40px;height:40px;border-radius:50%;background:var(--soft);font-size:18px;display:grid;place-items:center}
 .dbody{display:flex;flex-direction:column;align-items:center;gap:18px}
-.vs{width:120px;height:300px;border-radius:32px;background:rgba(255,255,255,.14);position:relative;overflow:hidden;touch-action:none;cursor:ns-resize}
-.vs i{position:absolute;left:0;right:0;bottom:0;background:#f5f5f7}
-.vs.light i{background:linear-gradient(#ffe27a,#ffd60a)}
+.vs{width:120px;height:300px;border-radius:32px;background:rgba(61,50,41,.1);position:relative;overflow:hidden;touch-action:none;cursor:ns-resize}
+.vs i{position:absolute;left:0;right:0;bottom:0;background:#c9ad85}
+.vs.light i{background:linear-gradient(#f7d77a,#e8b830)}
 .big{font-size:44px;font-weight:300;font-variant-numeric:tabular-nums}
 .btnrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.sbtn{min-width:110px;height:54px;padding:0 20px;border-radius:99px;background:rgba(255,255,255,.12);font-size:16px;font-weight:600;text-align:center}
-.sbtn.sel{background:#f5f5f7;color:#1c1c1e}
+.sbtn{min-width:110px;height:54px;padding:0 20px;border-radius:99px;background:var(--soft);font-size:16px;font-weight:600;text-align:center}
+.sbtn.sel{background:var(--text);color:#fff}
 .sbtn:disabled{opacity:.35}
-.round{width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,.12);font-size:34px;text-align:center}
+.round{width:68px;height:68px;border-radius:50%;background:var(--soft);font-size:34px;text-align:center}
 .round:disabled{opacity:.3}
 .thermo{display:flex;align-items:center;gap:26px}
 .thermo .big{font-size:72px;min-width:190px;text-align:center}
-.cam{width:100%;aspect-ratio:16/9;border-radius:18px;background:#000;display:grid;place-items:center;color:var(--sub2);font-size:15px;text-align:center;line-height:1.8}
-#ring{z-index:12;background:rgba(0,0,0,.75)}
-.ringbox{background:#1c1c22;border-radius:28px;padding:30px;width:min(560px,100%);text-align:center}
+.cam{width:100%;aspect-ratio:16/9;border-radius:18px;background:#3a3029;display:grid;place-items:center;color:rgba(255,248,238,.7);font-size:15px;text-align:center;line-height:1.8}
+#ring{z-index:12;background:rgba(60,45,30,.55)}
+.ringbox{background:var(--panel);border-radius:28px;padding:30px;width:min(560px,100%);text-align:center}
 .ringbox .bell{font-size:72px;line-height:1}
 .ringbox h3{font-size:30px;margin:12px 0 4px}
 .ringbox .cam{margin:16px 0 20px}
 
-.mbox{background:#1c1c22;border-radius:24px;padding:24px;width:min(720px,100%);max-height:100%;overflow:auto}
+.mbox{background:var(--panel);box-shadow:0 10px 40px rgba(60,45,30,.25);border-radius:24px;padding:24px;width:min(720px,100%);max-height:100%;overflow:auto}
 .mbox h3{font-size:20px;margin-bottom:14px}
 .fgrid{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;align-items:center;margin-bottom:12px}
 .fgrid label{font-size:14px;color:var(--sub)}
-.fgrid input,.mbox textarea{height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:15px;padding:0 12px;width:100%;user-select:text;-webkit-user-select:text}
+.fgrid input,.mbox textarea{height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--text);font:inherit;font-size:15px;padding:0 12px;width:100%;user-select:text;-webkit-user-select:text}
 .mbox textarea{height:120px;padding:10px 12px;font-family:ui-monospace,Consolas,monospace;font-size:13px;resize:vertical}
 .sec{font-size:15px;font-weight:700;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
 .note{font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:10px}
@@ -184,7 +183,7 @@ form.add[hidden]{display:none}
 .pill.primary{background:var(--blue);color:#fff}
 .pill.danger{color:var(--red)}
 #cfmModal{z-index:15}
-#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(60,60,68,.97);color:#fff;padding:12px 22px;border-radius:99px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(61,50,41,.94);color:#fff;padding:12px 22px;border-radius:99px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* 幅が少し狭いとき（iPad mini の横向き 1133 など）は、上の段を小さくまとめる */
@@ -336,7 +335,7 @@ form.add[hidden]{display:none}
       <label>市町村の名前</label>
       <div style="display:flex;gap:8px"><input id="cAlertQ" placeholder="例：〇〇市"><button class="pill" id="btnAlertFind" style="flex:none">さがす</button></div>
       <label>見つかった地域</label>
-      <select id="cAlertSel" style="height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:15px;padding:0 10px"><option value="">（さがすと、ここに出ます）</option></select>
+      <select id="cAlertSel" style="height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--text);font:inherit;font-size:15px;padding:0 10px"><option value="">（さがすと、ここに出ます）</option></select>
     </div>
     <div class="mbtns" style="justify-content:flex-start;margin-top:0"><button class="pill danger" id="btnAlertOff">注意報・警報を表示しない</button></div>
 
@@ -381,7 +380,7 @@ form.add[hidden]{display:none}
 <div class="modal" id="pinModal" style="z-index:15">
   <div class="mbox" style="width:min(380px,100%);text-align:center">
     <h3>管理用の暗証番号</h3>
-    <input id="pinIn" type="password" inputmode="numeric" maxlength="8" style="width:100%;height:56px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--text);font-size:28px;text-align:center;letter-spacing:8px;margin-bottom:16px">
+    <input id="pinIn" type="password" inputmode="numeric" maxlength="8" style="width:100%;height:56px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--text);font-size:28px;text-align:center;letter-spacing:8px;margin-bottom:16px">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <button class="pill" id="pinNo" style="height:54px">やめる</button>
       <button class="pill primary" id="pinOk" style="height:54px">ひらく</button>
@@ -500,9 +499,9 @@ function renderChips(){
   const lights = devs.filter(d => d.type==="light" && d.on).length, ac = D("aircon"), lk = D("lock");
   const chip = (ic, bg, b, s) => `<div class="chip"><span class="ci" style="background:${bg}">${ic}</span><div><b>${b}</b><span>${s}</span></div></div>`;
   $("#chips").innerHTML =
-    chip("🌡️", "rgba(255,159,10,.25)", "空調", `${roomT()?.toFixed(1) ?? "--"}° ${ac.on ? "・"+MODES[ac.mode] : ""}`) +
-    chip("💡", "rgba(255,214,10,.25)", "照明", lights ? `${lights}か所オン` : "すべてオフ") +
-    chip(lk.locked?"🔒":"🔓", lk.locked?"rgba(64,200,224,.25)":"rgba(255,69,58,.35)", "防犯", lk.locked ? "施錠済み" : "解錠中");
+    chip("🌡️", "rgba(217,130,43,.2)", "空調", `${roomT()?.toFixed(1) ?? "--"}° ${ac.on ? "・"+MODES[ac.mode] : ""}`) +
+    chip("💡", "rgba(232,184,48,.25)", "照明", lights ? `${lights}か所オン` : "すべてオフ") +
+    chip(lk.locked?"🔒":"🔓", lk.locked?"rgba(79,158,154,.22)":"rgba(207,88,72,.3)", "防犯", lk.locked ? "施錠済み" : "解錠中");
 }
 
 /* ----- タイルの操作：タップ＝切り替え、長押し＝詳細 ----- */
