@@ -166,10 +166,25 @@ form.add[hidden]{display:none}
 .thermo .big{font-size:72px;min-width:190px;text-align:center}
 .cam{width:100%;aspect-ratio:16/9;border-radius:18px;background:#3a3029;display:grid;place-items:center;color:rgba(255,248,238,.7);font-size:15px;text-align:center;line-height:1.8}
 #ring{z-index:12;background:rgba(60,45,30,.55)}
-.ringbox{background:var(--panel);border-radius:28px;padding:30px;width:min(560px,100%);text-align:center}
-.ringbox .bell{font-size:72px;line-height:1}
-.ringbox h3{font-size:30px;margin:12px 0 4px}
-.ringbox .cam{margin:16px 0 20px}
+/* インターホンの呼び出し画面（タブレットが親機代わり） */
+.ringbox{background:var(--panel);border-radius:28px;padding:22px;width:min(1120px,100%);max-height:100%;overflow:auto;display:grid;grid-template-columns:1.65fr 1fr;gap:22px;box-shadow:0 10px 40px rgba(60,45,30,.3)}
+.rcam{position:relative;align-self:center}
+.rcam .cam{font-size:18px}
+.rcam .cam small{font-size:13px;opacity:.8}
+.live{position:absolute;top:12px;left:12px;background:var(--red);color:#fff;font-size:13px;font-weight:700;padding:4px 12px;border-radius:99px}
+.rtime{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.45);color:#fff;font-size:13px;font-weight:600;padding:4px 12px;border-radius:99px}
+.rside{display:flex;flex-direction:column;gap:12px;justify-content:center}
+.rside .bell{font-size:52px;line-height:1}
+.rside h3{font-size:34px;line-height:1.25;margin:0}
+.rleft{font-size:13px;color:var(--sub)}
+.rbtn{height:66px;border-radius:18px;background:var(--soft);font-size:19px;font-weight:700;text-align:center;flex:none}
+.rbtn:active{transform:scale(.98)}
+.rbtn.ans{background:var(--green);color:#fff}
+.rbtn.open{background:var(--text);color:#fff}
+.rbtn:disabled{opacity:.35}
+.rhist{font-size:13px;color:var(--sub);line-height:1.7;border-top:1px solid var(--line);padding-top:8px}
+.sample{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;font-size:13px;font-weight:700;padding:4px 14px;border-radius:99px;z-index:13}
+@media (max-width:980px){ .ringbox{grid-template-columns:1fr} }
 
 .mbox{background:var(--panel);box-shadow:0 10px 40px rgba(60,45,30,.25);border-radius:24px;padding:24px;width:min(720px,100%);max-height:100%;overflow:auto}
 .mbox h3{font-size:20px;margin-bottom:14px}
@@ -302,14 +317,21 @@ form.add[hidden]{display:none}
 
 <!-- インターホンの呼び出し -->
 <div class="modal" id="ring">
+  <div class="sample" id="ringSample" hidden>見本の画面です</div>
   <div class="ringbox">
-    <div class="bell">🔔</div>
-    <h3>玄関に来客です</h3>
-    <div id="ringTime" style="color:var(--sub)"></div>
-    <div class="cam">📷 カメラ映像<br>（インターホン未導入のため表示できません）</div>
-    <div class="btnrow">
-      <button class="sbtn" id="ringClose">閉じる</button>
-      <button class="sbtn sel" id="ringOpen">🔓 玄関を開ける</button>
+    <div class="rcam">
+      <div class="cam">📷 玄関カメラの映像<br><small>（インターホンを入れたら、ここに映る予定）</small></div>
+      <span class="live">● 呼び出し中</span>
+      <span class="rtime" id="ringTime"></span>
+    </div>
+    <div class="rside">
+      <div class="bell">🔔</div>
+      <h3>玄関に<br>来客です</h3>
+      <div class="rleft" id="ringLeft"></div>
+      <button class="rbtn ans" id="ringAnswer">📱 アプリで応答する</button>
+      <button class="rbtn open" id="ringOpen">🔓 玄関を開ける</button>
+      <button class="rbtn" id="ringClose">閉じる</button>
+      <div class="rhist" id="ringHist"></div>
     </div>
   </div>
 </div>
@@ -441,7 +463,7 @@ const DEFAULT_DEVICES = [
 // 保存済みの状態を使い、新しく足したデバイスは初期値で加える
 const savedDevs = store.get("sh_devs", []) || [];
 // 名前や種類はいつも最新の定義を使い、状態（オン・明るさなど）だけ前回の続きにする
-const STATE_KEYS = ["on","level","temp","mode","locked","open","last","playing","st","daily"];
+const STATE_KEYS = ["on","level","temp","mode","locked","open","last","playing","st","daily","hist"];
 const VAC = {dock:"充電台", clean:"掃除中", pause:"一時停止", back:"戻り中"};
 let devs = DEFAULT_DEVICES.map(def => {
   const d = JSON.parse(JSON.stringify(def)), s = savedDevs.find(x => x.id === def.id);
@@ -648,14 +670,25 @@ function chime(){
     });
   }catch(e){}
 }
-function ringDoor(){
-  const d = D("door"); d.last = Date.now(); saveDevs(); render();
-  $("#ringTime").textContent = hhmm(d.last) + " の呼び出し";
+let ringTick = null;
+// sample＝true のときは見本（音を鳴らさず、記録も残さない）
+function ringDoor(sample){
+  const d = D("door"), now = Date.now();
+  if (!sample){ d.last = now; d.hist = [now, ...(d.hist || [])].slice(0, 5); saveDevs(); render(); }
+  $("#ringSample").hidden = !sample;
+  $("#ringTime").textContent = hhmm(now) + " の呼び出し";
   $("#ringOpen").disabled = !D("lock").locked;
-  $("#ring").classList.add("show"); chime();
-  clearTimeout(ringTimer); ringTimer = setTimeout(closeRing, 60*1000);
+  $("#ringOpen").textContent = D("lock").locked ? "🔓 玄関を開ける" : "🔓 玄関は開いています";
+  const hist = sample ? [now - 3*3600e3, now - 26*3600e3] : (d.hist || []).slice(1);
+  $("#ringHist").innerHTML = hist.length ? "これまでの来客<br>" + hist.map(t => "・" + new Date(t).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})).join("<br>") : "";
+  $("#ring").classList.add("show"); if (!sample) chime();
+  let left = 60;
+  const showLeft = () => $("#ringLeft").textContent = `${left}秒で自動で閉じます`;
+  showLeft(); clearInterval(ringTick);
+  ringTick = setInterval(() => { left--; showLeft(); if (left <= 0) closeRing(); }, 1000);
 }
-function closeRing(){ $("#ring").classList.remove("show"); clearTimeout(ringTimer); }
+function closeRing(){ $("#ring").classList.remove("show"); clearInterval(ringTick); clearTimeout(ringTimer); }
+$("#ringAnswer").addEventListener("click", () => toast("インターホンを入れたら、ここからインターホンのアプリを開く予定です（今は見本）"));
 async function unlockDoor(){
   const lk = D("lock"); if (!lk.locked) return true;
   if (!await ask("玄関の鍵を開けますか？")) return false;
@@ -1076,6 +1109,8 @@ $("#btnDaily").addEventListener("click", () => setMode("daily"));
 
 showEnv();
 setMode("daily");
+// アドレスの最後に ?ring を付けて開くと、呼び出し画面の見本を出す
+if (/[?&]ring\b/.test(location.search)) ringDoor(true);
 </script>
 </body>
 </html>
