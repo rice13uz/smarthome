@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>わが家</title>
+<style>
+:root{
+  --text:#f5f5f7; --sub:rgba(235,235,245,.6); --sub2:rgba(235,235,245,.35);
+  --tile:rgba(44,44,50,.72); --tileOn:rgba(245,245,247,.96); --card:rgba(30,30,36,.7);
+  --line:rgba(255,255,255,.08);
+  --yellow:#ffd60a; --orange:#ff9f0a; --blue:#0a84ff; --cyan:#64d2ff; --green:#30d158; --red:#ff453a; --purple:#bf5af2; --teal:#40c8e0;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;color:var(--text)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Yu Gothic UI","Meiryo",sans-serif;
+  /* 壁紙（画像を使わずグラデーションだけで軽く） */
+  background:
+    radial-gradient(ellipse at 15% 0%, #4a3a78 0, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, #17506a 0, transparent 55%),
+    radial-gradient(ellipse at 60% 50%, #2a1f3d 0, transparent 60%),
+    #0c0e14;
+  height:100vh;height:100dvh;overflow:hidden;padding:18px 22px;
+  display:grid;grid-template-rows:96px 1fr;gap:12px;
+  user-select:none;-webkit-user-select:none;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation;text-align:inherit}
+.badge{font-size:12px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.1);color:var(--sub)}
+.badge.live{color:var(--green)}
+
+/* ===== 上部 ===== */
+header{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:26px}
+.clock #date{font-size:17px;color:var(--sub);font-weight:600}
+.clock .tm{display:flex;align-items:baseline;gap:4px}
+#time{font-size:58px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1.05}
+#sec{font-size:20px;color:var(--sub2);font-variant-numeric:tabular-nums;font-weight:600}
+#chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:10px;height:58px;padding:0 16px 0 10px;border-radius:16px;background:var(--card)}
+.chip .ci{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:18px}
+.chip b{display:block;font-size:13px;color:var(--sub);font-weight:600;line-height:1.2}
+.chip span{font-size:16px;font-weight:600}
+.weather{display:flex;align-items:center;gap:12px}
+#wIcon{font-size:42px;line-height:1}
+#wTemp{font-size:40px;font-weight:300;line-height:1}
+.wsub{font-size:13px;color:var(--sub);line-height:1.5}
+.hbtns{display:flex;gap:10px}
+/* 注意報・警報 */
+#wAlert{display:flex;gap:4px;flex-wrap:nowrap;max-width:300px;overflow:hidden}
+#wAlert[hidden]{display:none}
+.al{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;line-height:1.5}
+.al.l20{background:#ffd60a;color:#1c1c1e}
+.al.l30{background:#ff453a;color:#fff}
+.al.l40{background:#bf5af2;color:#fff}
+.al.l50{background:#000;color:#fff;box-shadow:0 0 0 2px #bf5af2 inset}
+.al.err{background:rgba(255,255,255,.12);color:var(--sub)}
+.alist{list-style:none;margin:6px 0 10px}
+.alist li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:16px}
+.alist li .al{font-size:14px}
+.iconbtn{width:52px;height:52px;border-radius:50%;background:var(--card);font-size:22px;display:grid;place-items:center}
+.iconbtn:active{background:rgba(255,255,255,.2)}
+
+/* ===== 本体 ===== */
+main{display:grid;grid-template-columns:1.9fr 1fr;gap:20px;min-height:0}
+.left{display:flex;flex-direction:column;min-height:0}
+.ttl{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.ttl h1{font-size:30px;font-weight:800;letter-spacing:.5px}
+.ttl .sp{flex:1}
+.pill{height:40px;padding:0 16px;border-radius:99px;background:var(--card);font-size:14px;font-weight:600}
+.pill:active{background:rgba(255,255,255,.2)}
+.lbl{font-size:16px;font-weight:700;margin:10px 2px 8px;display:flex;justify-content:space-between;align-items:baseline}
+.lbl small{font-size:12px;color:var(--sub2);font-weight:500}
+
+#scenes{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.scene{height:66px;border-radius:18px;background:var(--tile);display:flex;align-items:center;gap:10px;padding:0 12px;font-size:16px;font-weight:600;transition:background .15s,color .15s,transform .1s}
+.scene .ic{width:40px;height:40px;font-size:20px}
+.scene:active{transform:scale(.97)}
+.scene.flash{background:var(--tileOn);color:#1c1c1e}
+
+#devices{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(3,1fr);gap:10px}
+.tile{border-radius:20px;background:var(--tile);padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;min-height:0;transition:background .15s,transform .12s;touch-action:manipulation}
+.tile:active{transform:scale(.97)}
+.tile.on{background:var(--tileOn);color:#1c1c1e}
+.tile{position:relative}
+.star{position:absolute;top:6px;right:6px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.28);color:#ffd60a;font-size:18px;display:grid;place-items:center}
+.tile.on .star{background:rgba(0,0,0,.08);color:#c79a00}
+.stage{position:absolute;top:44px;right:6px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(255,159,10,.25);color:#ffb340}
+.tile.on .stage{color:#a35a00}
+/* 日常用：タイルを大きく */
+body.daily .tile{padding:16px 18px}
+body.daily .ic{width:52px;height:52px;font-size:26px}
+body.daily .tname{font-size:19px}
+body.daily .tstat{font-size:15px}
+body.daily .admonly{display:none!important}
+body.admin .dailyonly{display:none!important}
+.modepill{background:var(--blue);color:#fff}
+.ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:21px;background:rgba(255,255,255,.12);flex:none}
+.ic.gray{filter:grayscale(1);opacity:.7}
+.tname{font-size:15px;font-weight:700;line-height:1.25}
+.tstat{font-size:13px;color:var(--sub);margin-top:2px;font-weight:500}
+.tile.on .tstat{color:#6e6e73}
+.tile .bar{height:5px;border-radius:9px;background:rgba(0,0,0,.1);margin-top:10px;overflow:hidden}
+.tile .bar i{display:block;height:100%;background:var(--orange);border-radius:9px}
+
+/* 右側 */
+.right{display:grid;grid-template-rows:auto 1fr;gap:16px;min-height:0}
+/* 買い物リスト */
+.shop .add{display:flex;gap:8px;margin-bottom:8px}
+#shopIn{flex:1;min-width:0;height:46px;border-radius:12px;border:0;background:rgba(0,0,0,.25);color:var(--text);font:inherit;font-size:17px;padding:0 12px;outline:none;user-select:text;-webkit-user-select:text}
+#shopIn:focus{box-shadow:0 0 0 2px rgba(48,209,88,.6)}
+.addbtn{width:46px;height:46px;border-radius:12px;background:var(--green);color:#fff;font-size:26px;text-align:center;flex:none}
+.micbtn{flex:1;min-width:0;height:52px;border-radius:14px;background:var(--green);color:#fff;font-size:18px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
+.micbtn.rec{background:var(--red)}
+.addbtn.kb{background:rgba(255,255,255,.12);font-size:20px;height:52px;width:52px}
+.addbtn.kb.sel{background:#f5f5f7}
+form.add[hidden]{display:none}
+#freq{display:flex;gap:6px;overflow-x:auto;margin-bottom:6px;scrollbar-width:none;flex:none}
+#freq::-webkit-scrollbar{display:none}
+.fq{height:34px;padding:0 12px;border-radius:99px;background:rgba(255,255,255,.1);font-size:14px;white-space:nowrap;flex:none}
+.fq:active{background:rgba(48,209,88,.4)}
+#shopList{flex:1;min-height:0;overflow-y:auto;list-style:none}
+#shopList li{display:flex;align-items:center;gap:10px;min-height:46px;border-bottom:1px solid var(--line);cursor:pointer}
+.ck{width:28px;height:28px;border-radius:50%;border:2px solid var(--sub2);flex:none;display:grid;place-items:center;font-size:15px;color:#fff}
+#shopList li.done .ck{background:var(--green);border-color:var(--green)}
+#shopList .nm{flex:1;font-size:18px;line-height:1.3;word-break:break-all}
+#shopList li.done .nm{color:var(--sub2);text-decoration:line-through}
+#shopList .del{width:40px;height:40px;color:var(--sub2);font-size:16px;text-align:center;flex:none}
+.empty{color:var(--sub2);font-size:14px;text-align:center;padding:18px 0}
+.card{background:var(--card);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;min-height:0}
+.chead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.chead h2{font-size:17px;font-weight:700}
+.chead .sp{flex:1}
+.env{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.env>div{background:rgba(0,0,0,.2);border-radius:16px;padding:10px 16px;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:4px}
+.env small{width:100%;font-size:14px;color:var(--sub);font-weight:600}
+.env b{font-size:54px;font-weight:300;line-height:1.1;font-variant-numeric:tabular-nums}
+.env span{font-size:18px;color:var(--sub)}
+.env .t b{color:var(--orange)} .env .h b{color:var(--cyan)}
+
+/* ===== 詳細シート・モーダル ===== */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+.modal.show{display:flex}
+.sheet{background:#1c1c22;border-radius:28px;padding:22px 26px 26px;width:min(560px,100%);max-height:100%;overflow:auto}
+.shead{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.shead .nm{font-size:22px;font-weight:700}
+.shead .st{font-size:15px;color:var(--sub)}
+.shead .sp{flex:1}
+.xbtn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);font-size:18px;display:grid;place-items:center}
+.dbody{display:flex;flex-direction:column;align-items:center;gap:18px}
+.vs{width:120px;height:300px;border-radius:32px;background:rgba(255,255,255,.14);position:relative;overflow:hidden;touch-action:none;cursor:ns-resize}
+.vs i{position:absolute;left:0;right:0;bottom:0;background:#f5f5f7}
+.vs.light i{background:linear-gradient(#ffe27a,#ffd60a)}
+.big{font-size:44px;font-weight:300;font-variant-numeric:tabular-nums}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.sbtn{min-width:110px;height:54px;padding:0 20px;border-radius:99px;background:rgba(255,255,255,.12);font-size:16px;font-weight:600;text-align:center}
+.sbtn.sel{background:#f5f5f7;color:#1c1c1e}
+.sbtn:disabled{opacity:.35}
+.round{width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,.12);font-size:34px;text-align:center}
+.round:disabled{opacity:.3}
+.thermo{display:flex;align-items:center;gap:26px}
+.thermo .big{font-size:72px;min-width:190px;text-align:center}
+.cam{width:100%;aspect-ratio:16/9;border-radius:18px;background:#000;display:grid;place-items:center;color:var(--sub2);font-size:15px;text-align:center;line-height:1.8}
+#ring{z-index:12;background:rgba(0,0,0,.75)}
+.ringbox{background:#1c1c22;border-radius:28px;padding:30px;width:min(560px,100%);text-align:center}
+.ringbox .bell{font-size:72px;line-height:1}
+.ringbox h3{font-size:30px;margin:12px 0 4px}
+.ringbox .cam{margin:16px 0 20px}
+
+.mbox{background:#1c1c22;border-radius:24px;padding:24px;width:min(720px,100%);max-height:100%;overflow:auto}
+.mbox h3{font-size:20px;margin-bottom:14px}
+.fgrid{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;align-items:center;margin-bottom:12px}
+.fgrid label{font-size:14px;color:var(--sub)}
+.fgrid input,.mbox textarea{height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:15px;padding:0 12px;width:100%;user-select:text;-webkit-user-select:text}
+.mbox textarea{height:120px;padding:10px 12px;font-family:ui-monospace,Consolas,monospace;font-size:13px;resize:vertical}
+.sec{font-size:15px;font-weight:700;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+.note{font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:10px}
+.mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.pill.primary{background:var(--blue);color:#fff}
+.pill.danger{color:var(--red)}
+#cfmModal{z-index:15}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(60,60,68,.97);color:#fff;padding:12px 22px;border-radius:99px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 縦が狭いとき（2560×1440 タブレットでアドレスバーが出ているときなど）は詰めて表示 */
+@media (max-height:700px) and (min-width:981px){
+  body{padding:12px 18px;grid-template-rows:76px 1fr;gap:8px}
+  #time{font-size:46px}
+  .chip{height:50px}
+  .ttl h1{font-size:26px}
+  .lbl{margin:6px 2px 6px}
+  .scene{height:54px}
+  .tile{padding:8px 12px}
+  .tile .ic{width:34px;height:34px;font-size:17px}
+  .tile .bar{display:none}
+  .env b{font-size:42px}
+}
+/* 縦画面・小さい画面ではスクロール可に */
+@media (max-width:980px),(max-height:540px){
+  body{height:auto;overflow:auto;grid-template-rows:auto auto}
+  header{grid-template-columns:1fr auto}
+  #chips{grid-column:1/-1;order:3}
+  .weather{grid-column:1/-1}
+  main{grid-template-columns:1fr}
+  #scenes{grid-template-columns:repeat(2,1fr)}
+  #devices{grid-template-columns:repeat(2,1fr);grid-template-rows:none;grid-auto-rows:150px}
+  .right{grid-template-rows:auto 420px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="clock"><div id="date"></div><div class="tm"><span id="time">--:--</span><span id="sec">--</span></div></div>
+  <div id="chips"></div>
+  <div class="weather">
+    <div id="wIcon">⛅</div>
+    <div id="wTemp">--°</div>
+    <div class="wsub">
+      <div id="wDesc">読み込み中</div>
+      <div id="wRange"></div>
+      <div id="wLine3"><span id="wPlace"></span> <span id="wBadge" class="badge">見本</span></div>
+      <button id="wAlert" hidden></button>
+    </div>
+  </div>
+  <div class="hbtns">
+    <button class="iconbtn" id="btnFull" title="全画面">⛶</button>
+    <button class="iconbtn dailyonly" id="btnAdmin" title="管理用へ">🔧</button>
+    <button class="iconbtn admonly" id="btnSet" title="設定">⚙️</button>
+  </div>
+</header>
+
+<main>
+  <section class="left">
+    <div class="ttl">
+      <h1 id="title">わが家</h1>
+      <span id="modeBadge" class="badge admonly">モック動作</span>
+      <span class="sp"></span>
+      <button class="pill modepill admonly" id="btnDaily">🏠 日常用にもどる</button>
+      <button class="pill" id="allOff">照明をすべて消す</button>
+    </div>
+    <div class="lbl">シーン</div>
+    <div id="scenes">
+      <button class="scene" data-scene="out"><span class="ic" style="background:var(--blue)">🚪</span>おでかけ</button>
+      <button class="scene" data-scene="home"><span class="ic" style="background:var(--orange)">🏠</span>ただいま</button>
+      <button class="scene" data-scene="sleep"><span class="ic" style="background:var(--purple)">🌙</span>おやすみ</button>
+      <button class="scene" data-scene="movie"><span class="ic" style="background:var(--red)">🎬</span>映画</button>
+    </div>
+    <div class="lbl"><span id="devLbl">デバイス</span><small id="devHint">タップで ON/OFF ・ 長押しで くわしく</small></div>
+    <div id="devices"></div>
+  </section>
+
+  <div class="right">
+    <section class="card">
+      <div class="chead"><h2>リビングの室温・湿度</h2><span class="sp"></span><span id="comfort" class="badge"></span></div>
+      <div class="env">
+        <div class="t"><small>🌡️ 室温</small><b id="nowT">--</b><span>°C</span></div>
+        <div class="h"><small>💧 湿度</small><b id="nowH">--</b><span>%</span></div>
+      </div>
+    </section>
+
+      <section class="card shop">
+        <div class="chead">
+          <h2>🛒 買い物リスト</h2><span id="shopCount" class="badge"></span>
+          <span class="sp"></span><button class="pill" id="shopClear">買った物を消す</button>
+        </div>
+        <div class="add" id="voiceRow">
+          <button class="micbtn" id="micBtn">🎤 話して追加</button>
+          <button class="addbtn kb" id="kbBtn" aria-label="キーボードで入力">⌨️</button>
+        </div>
+        <form class="add" id="shopForm" autocomplete="off" hidden>
+          <input id="shopIn" enterkeyhint="done" placeholder="買う物を入れる">
+          <button class="addbtn" type="submit" aria-label="追加">＋</button>
+        </form>
+        <div id="freq"></div>
+        <ul id="shopList"></ul>
+      </section>
+  </div>
+</main>
+
+<!-- デバイスの詳細 -->
+<div class="modal" id="detail">
+  <div class="sheet">
+    <div class="shead"><span class="ic" id="dIc"></span><div><div class="nm" id="dName"></div><div class="st" id="dStat"></div></div><span class="sp"></span><button class="xbtn" id="dClose">✕</button></div>
+    <div class="dbody" id="dBody"></div>
+  </div>
+</div>
+
+<!-- インターホンの呼び出し -->
+<div class="modal" id="ring">
+  <div class="ringbox">
+    <div class="bell">🔔</div>
+    <h3>玄関に来客です</h3>
+    <div id="ringTime" style="color:var(--sub)"></div>
+    <div class="cam">📷 カメラ映像<br>（インターホン未導入のため表示できません）</div>
+    <div class="btnrow">
+      <button class="sbtn" id="ringClose">閉じる</button>
+      <button class="sbtn sel" id="ringOpen">🔓 玄関を開ける</button>
+    </div>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="modal" id="setModal">
+  <div class="mbox">
+    <h3>設定</h3>
+    <div class="note">設定はこのタブレットのブラウザの中（localStorage）にだけ保存されます。外部には送られません。</div>
+
+    <div class="sec">天気（Open-Meteo・キー不要）</div>
+    <div class="fgrid">
+      <label>天気を取得する</label><div><input type="checkbox" id="cWeather" style="width:24px;height:24px"></div>
+      <label>地名（表示用）</label><input id="cPlace" placeholder="例：自宅">
+      <label>緯度</label><input id="cLat" inputmode="decimal" placeholder="例：35.68">
+      <label>経度</label><input id="cLon" inputmode="decimal" placeholder="例：139.77">
+    </div>
+    <div class="mbtns" style="justify-content:flex-start;margin-top:0"><button class="pill" id="btnGeo">📍 今いる場所を使う</button></div>
+
+    <div class="sec">注意報・警報（気象庁・キー不要）</div>
+    <div class="note">今の地域：<b id="cAlertNow">未設定</b>　市町村の名前で探して選びます。</div>
+    <div class="fgrid">
+      <label>市町村の名前</label>
+      <div style="display:flex;gap:8px"><input id="cAlertQ" placeholder="例：〇〇市"><button class="pill" id="btnAlertFind" style="flex:none">さがす</button></div>
+      <label>見つかった地域</label>
+      <select id="cAlertSel" style="height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:15px;padding:0 10px"><option value="">（さがすと、ここに出ます）</option></select>
+    </div>
+    <div class="mbtns" style="justify-content:flex-start;margin-top:0"><button class="pill danger" id="btnAlertOff">注意報・警報を表示しない</button></div>
+
+    <div class="sec">デバイス連携（Home Assistant・任意）</div>
+    <div class="note">URL とトークンを入れると、ボタン操作が Home Assistant に送られます。空欄ならモック（見た目だけ）で動きます。<br>
+      ※ Home Assistant 側の configuration.yaml の <code>http: cors_allowed_origins</code> に、このページの開き方に合った値（ローカルファイルなら <code>null</code>）を足す必要があります。</div>
+    <div class="fgrid">
+      <label>Home Assistant URL</label><input id="cHaUrl" placeholder="例：http://homeassistant.local:8123">
+      <label>アクセストークン</label><input id="cHaToken" type="password" placeholder="長期アクセストークン">
+    </div>
+    <label class="note" style="display:block;margin-bottom:6px">デバイスと entity_id の対応（JSON）</label>
+    <textarea id="cMap"></textarea>
+
+    <div class="sec">画面</div>
+    <div class="fgrid">
+      <label>画面を消さない</label><div><input type="checkbox" id="cWake" style="width:24px;height:24px"></div>
+      <label>管理用の暗証番号</label><input id="cPin" type="password" inputmode="numeric" maxlength="8" placeholder="空欄なら暗証番号なし（数字4〜8けた）">
+    </div>
+    <div class="note">暗証番号は、子どもがうっかり管理用を開かないための簡単なカギです。防犯のための強いカギではありません。</div>
+
+    <div class="mbtns">
+      <button class="pill danger" id="btnReset">すべて初期化</button>
+      <button class="pill" id="btnTest">連携テスト</button>
+      <button class="pill" id="btnCancel">閉じる</button>
+      <button class="pill primary" id="btnSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 注意報・警報のくわしい内容 -->
+<div class="modal" id="alertModal">
+  <div class="mbox" style="width:min(560px,100%)">
+    <h3 id="alTitle">注意報・警報</h3>
+    <ul class="alist" id="alList"></ul>
+    <div class="note" id="alHead"></div>
+    <div class="note" id="alTime"></div>
+    <div class="mbtns"><button class="pill primary" id="alClose">閉じる</button></div>
+  </div>
+</div>
+
+<!-- 管理用の暗証番号 -->
+<div class="modal" id="pinModal" style="z-index:15">
+  <div class="mbox" style="width:min(380px,100%);text-align:center">
+    <h3>管理用の暗証番号</h3>
+    <input id="pinIn" type="password" inputmode="numeric" maxlength="8" style="width:100%;height:56px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--text);font-size:28px;text-align:center;letter-spacing:8px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="pill" id="pinNo" style="height:54px">やめる</button>
+      <button class="pill primary" id="pinOk" style="height:54px">ひらく</button>
+    </div>
+  </div>
+</div>
+
+<!-- 確認 -->
+<div class="modal" id="cfmModal">
+  <div class="mbox" style="width:min(420px,100%);text-align:center">
+    <h3 id="cfmMsg" style="margin:8px 0 22px"></h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="pill" id="cfmNo" style="height:54px">やめる</button>
+      <button class="pill primary" id="cfmYes" style="height:54px">はい</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ========== 設定 ========== */
+const DEFAULT_MAP = {
+  tatami:"light.tatami", down:"switch.downlight", bedroom:"light.bedroom",
+  aircon:"climate.living", aircon2:"climate.bedroom",lock:"lock.front_door", curtain:"cover.living_curtain",
+  fan:"switch.vent_fan", tv:"media_player.tv", appletv:"media_player.apple_tv", roomba:"vacuum.roomba"
+};
+let cfg = Object.assign({weather:true, place:"熊本市", lat:32.80, lon:130.71, haUrl:"", haToken:"", map:DEFAULT_MAP, wake:false,
+  alert:{code:"4310000", office:"430000", name:"熊本市"}}, store.get("sh_cfg", {}));
+const live = () => !!(cfg.haUrl && cfg.haToken);
+/* 画面の種類：daily＝日常用（ふだん家族が使う） / admin＝管理用（全部の機器・設定） */
+let mode = "daily";
+
+/* ========== デバイス ========== */
+const DEFAULT_DEVICES = [
+  // daily: 日常用の画面に出すか ／ stage: 導入の状況（空＝導入済み）
+  {id:"tatami",  name:"畳コーナー照明", type:"light",   icon:"💡", on:true,  level:80, daily:true},
+  {id:"down",    name:"ダウンライト",   type:"light",   icon:"🔆", on:false, level:100, noDim:true, daily:true, stage:"保留"},
+  {id:"bedroom", name:"寝室照明",       type:"light",   icon:"🛏️", on:false, level:100, noDim:true, daily:false, stage:"保留"},
+  {id:"aircon",  name:"リビングエアコン", type:"climate", icon:"❄️", on:true,  temp:25, mode:"cool", daily:true},
+  {id:"aircon2", name:"寝室エアコン",   type:"climate", icon:"❄️", on:false, temp:26, mode:"cool", daily:true},
+  {id:"lock",    name:"玄関ロック",     type:"lock",    icon:"🔒", locked:true, daily:true, stage:"未導入"},
+  {id:"door",    name:"インターホン",   type:"bell",    icon:"🔔", last:null, daily:true, stage:"未導入"},
+  {id:"curtain", name:"カーテン",       type:"cover",   icon:"🪟", open:true, daily:false, stage:"未導入"},
+  {id:"fan",     name:"換気扇",         type:"switch",  icon:"🌀", on:false, daily:false, stage:"未確認"},
+  {id:"tv",      name:"テレビ",         type:"switch",  icon:"📺", on:false, daily:true},
+  {id:"appletv", name:"Apple TV",       type:"media",   icon:"🎞️", on:false, playing:false, daily:false},
+  {id:"roomba",  name:"ルンバ",         type:"vacuum",  icon:"🧹", st:"dock", daily:false},
+  {id:"ring",    name:"見守りカメラ",   type:"camera",  icon:"📹", daily:false}
+];
+// 保存済みの状態を使い、新しく足したデバイスは初期値で加える
+const savedDevs = store.get("sh_devs", []) || [];
+// 名前や種類はいつも最新の定義を使い、状態（オン・明るさなど）だけ前回の続きにする
+const STATE_KEYS = ["on","level","temp","mode","locked","open","last","playing","st","daily"];
+const VAC = {dock:"充電台", clean:"掃除中", pause:"一時停止", back:"戻り中"};
+let devs = DEFAULT_DEVICES.map(def => {
+  const d = JSON.parse(JSON.stringify(def)), s = savedDevs.find(x => x.id === def.id);
+  if (s) STATE_KEYS.forEach(k => { if (k in d && k in s) d[k] = s[k]; });
+  return d;
+});
+const D = id => devs.find(d => d.id === id);
+const MODES = {cool:"冷房", heat:"暖房", dry:"除湿", fan_only:"送風"};
+const MODE_ICON = {cool:"❄️", heat:"🔥", dry:"💧", fan_only:"🍃"};
+const MODE_COLOR = {cool:"var(--blue)", heat:"var(--orange)", dry:"var(--teal)", fan_only:"var(--green)"};
+const saveDevs = () => store.set("sh_devs", devs);
+const roomT = () => cur.t;
+
+/* デバイスごとの見た目（ON か・アイコン・色・状態の文） */
+function look(d){
+  switch(d.type){
+    case "light":   return {on:d.on, icon:d.icon, color:"var(--yellow)", stat: d.on ? (d.noDim ? "オン" : `${d.level}%`) : "オフ"};
+    case "switch":  return {on:d.on, icon:d.icon, color:"var(--cyan)",   stat: d.on ? "オン" : "オフ"};
+    case "climate": return {on:d.on, icon:MODE_ICON[d.mode], color:MODE_COLOR[d.mode],
+                     stat: d.on ? `${MODES[d.mode]}${d.mode==="fan_only"?"":" "+d.temp.toFixed(1)+"°"}` : (d.id==="aircon" ? `オフ・室温 ${roomT()?.toFixed(1) ?? "--"}°` : "オフ")};
+    case "lock":    return {on:!d.locked, icon:d.locked?"🔒":"🔓", color:d.locked?"var(--teal)":"var(--red)", stat: d.locked ? "施錠" : "解錠中"};
+    case "cover":   return {on:d.open, icon:"🪟", color:"var(--blue)", stat: d.open ? "開" : "閉"};
+    case "media":   return {on:d.on, icon:d.icon, color:"var(--purple)", stat: d.on ? (d.playing ? "再生中" : "オン") : "オフ"};
+    case "vacuum":  return {on:d.st==="clean"||d.st==="back", icon:d.icon, color:"var(--green)", stat: VAC[d.st]};
+    case "camera":  return {on:false, icon:d.icon, color:"var(--red)", stat:"寝室・見守り中"};
+    case "bell":    return {on:false, icon:"🔔", color:"var(--green)", stat: d.last ? "最後の来客 " + hhmm(d.last) : "待機中"};
+  }
+}
+
+const ALWAYS_COLOR = ["lock","bell","camera"];
+function tileHTML(d){
+  const L = look(d);
+  const bar = d.type==="light" && d.on && !d.noDim ?`<div class="bar"><i style="width:${d.level}%"></i></div>` : "";
+  const adm = mode==="admin"
+    ? `<span class="star ${d.daily?"sel":""}" data-star="1" title="日常用に出す">${d.daily?"★":"☆"}</span>${d.stage?`<span class="stage">${d.stage}</span>`:""}` : "";
+  return `<button class="tile ${L.on?"on":""}" data-id="${d.id}">${adm}
+    <span class="ic ${L.on||ALWAYS_COLOR.includes(d.type)?"":"gray"}" style="${L.on||ALWAYS_COLOR.includes(d.type)?`background:${L.color}`:""}">${L.icon}</span>
+    <span><div class="tname">${d.name}</div><div class="tstat">${L.stat}</div>${bar}</span></button>`;
+}
+
+function render(){
+  const list = mode==="admin" ? devs : devs.filter(d => d.daily);
+  const cols = mode==="admin" ? 5 : 4;
+  $("#devices").style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  $("#devices").style.gridTemplateRows = `repeat(${Math.max(2, Math.ceil(list.length/cols))},1fr)`;
+  $("#devices").innerHTML = list.length ? list.map(tileHTML).join("")
+    : `<div class="empty" style="grid-column:1/-1">日常用に出す機器がありません（管理用の画面で ☆ を押して選びます）</div>`;
+  renderChips();
+  $("#modeBadge").textContent = live() ? "Home Assistant 連携中" : "モック動作";
+  $("#modeBadge").classList.toggle("live", live());
+  if (openId) renderDetail();
+}
+
+function renderChips(){
+  const lights = devs.filter(d => d.type==="light" && d.on).length, ac = D("aircon"), lk = D("lock");
+  const chip = (ic, bg, b, s) => `<div class="chip"><span class="ci" style="background:${bg}">${ic}</span><div><b>${b}</b><span>${s}</span></div></div>`;
+  $("#chips").innerHTML =
+    chip("🌡️", "rgba(255,159,10,.25)", "空調", `${roomT()?.toFixed(1) ?? "--"}° ${ac.on ? "・"+MODES[ac.mode] : ""}`) +
+    chip("💡", "rgba(255,214,10,.25)", "照明", lights ? `${lights}か所オン` : "すべてオフ") +
+    chip(lk.locked?"🔒":"🔓", lk.locked?"rgba(64,200,224,.25)":"rgba(255,69,58,.35)", "防犯", lk.locked ? "施錠済み" : "解錠中");
+}
+
+/* ----- タイルの操作：タップ＝切り替え、長押し＝詳細 ----- */
+let lpTimer = null, lpFired = false, lpStart = null;
+const grid = $("#devices");
+grid.addEventListener("pointerdown", e => {
+  const t = e.target.closest(".tile"); if (!t || e.target.closest("[data-star]")) return;
+  lpFired = false; lpStart = [e.clientX, e.clientY];
+  clearTimeout(lpTimer);
+  lpTimer = setTimeout(() => { lpFired = true; openDetail(t.dataset.id); }, 500);
+});
+grid.addEventListener("pointermove", e => {
+  if (lpStart && Math.hypot(e.clientX-lpStart[0], e.clientY-lpStart[1]) > 10) clearTimeout(lpTimer);
+});
+["pointerup","pointercancel","pointerleave"].forEach(ev => grid.addEventListener(ev, () => clearTimeout(lpTimer)));
+grid.addEventListener("contextmenu", e => e.preventDefault());
+grid.addEventListener("click", e => {
+  const t = e.target.closest(".tile"); if (!t) return;
+  if (lpFired){ lpFired = false; return; }
+  if (e.target.closest("[data-star]")){
+    const d = D(t.dataset.id); d.daily = !d.daily; saveDevs(); render();
+    toast(`${d.name}を日常用に${d.daily?"出します":"出しません"}`); return;
+  }
+  quick(D(t.dataset.id));
+});
+
+async function quick(d){
+  if (d.type==="bell" || d.type==="camera"){ openDetail(d.id); return; }
+  if (d.type==="media"){ d.on = !d.on; if (!d.on) d.playing = false; toast(`${d.name}を${d.on?"オン":"オフ"}にしました`); }
+  if (d.type==="vacuum"){
+    if (d.st==="clean"){ d.st = "back"; toast("ルンバを充電台に戻します"); }
+    else { d.st = "clean"; toast("ルンバの掃除を始めました"); }
+  }
+  if (d.type==="light" || d.type==="switch"){ d.on = !d.on; toast(`${d.name}を${d.on?"オン":"オフ"}にしました`); }
+  else if (d.type==="climate"){ d.on = !d.on; toast(`${d.name}を${d.on?MODES[d.mode]+"で入れ":"止め"}ました`); }
+  else if (d.type==="cover"){ d.open = !d.open; toast(`カーテンを${d.open?"開け":"閉め"}ました`); }
+  else if (d.type==="lock"){
+    if (d.locked){ if (!await ask("玄関の鍵を開けますか？")) return; d.locked = false; toast("🔓 解錠しました"); }
+    else { d.locked = true; toast("🔒 施錠しました"); }
+  }
+  commit(d);
+}
+
+function commit(d, debounce){
+  saveDevs(); render();
+  if (!live()) return;
+  clearTimeout(d._t);
+  d._t = setTimeout(() => sendHA(d), debounce ? 600 : 0);
+}
+
+/* ----- 詳細シート ----- */
+let openId = null;
+function openDetail(id){ openId = id; renderDetail(); $("#detail").classList.add("show"); }
+function closeDetail(){ openId = null; $("#detail").classList.remove("show"); }
+$("#dClose").addEventListener("click", closeDetail);
+$("#detail").addEventListener("click", e => { if (e.target.id==="detail") closeDetail(); });
+
+function renderDetail(){
+  const d = D(openId), L = look(d);
+  $("#dIc").textContent = L.icon; $("#dIc").style.background = L.color;
+  $("#dName").textContent = d.name; $("#dStat").textContent = L.stat;
+  let h = "";
+  if (d.type==="light" && d.noDim){
+    h = `<div class="vs light" id="sw" style="height:240px"><i style="height:${d.on?100:0}%"></i></div>
+      <div style="color:var(--sub);font-size:14px">明るさの調整はできません（オン・オフのみ）</div>
+      <div class="btnrow"><button class="sbtn ${d.on?"":"sel"}" data-x="off">オフ</button><button class="sbtn ${d.on?"sel":""}" data-x="on">オン</button></div>`;
+  } else if (d.type==="light"){
+    h = `<div class="big" id="vsLbl">${d.on ? d.level+"%" : "オフ"}</div>
+      <div class="vs light" id="vs"><i style="height:${d.on?d.level:0}%"></i></div>
+      <div class="btnrow"><button class="sbtn ${d.on?"":"sel"}" data-x="off">オフ</button><button class="sbtn ${d.on?"sel":""}" data-x="on">オン</button></div>`;
+  } else if (d.type==="switch"){
+    h = `<div class="vs" id="sw" style="height:240px"><i style="height:${d.on?100:0}%"></i></div>
+      <div class="btnrow"><button class="sbtn ${d.on?"":"sel"}" data-x="off">オフ</button><button class="sbtn ${d.on?"sel":""}" data-x="on">オン</button></div>`;
+  } else if (d.type==="climate"){
+    const noT = !d.on || d.mode==="fan_only";
+    h = `<div style="color:var(--sub)">${d.id==="aircon" ? `いまのリビングの室温 ${roomT()?.toFixed(1) ?? "--"}°C` : "寝室の室温は未接続"}</div>
+      <div class="thermo"><button class="round" data-x="down" ${noT?"disabled":""}>−</button>
+        <div class="big">${d.temp.toFixed(1)}°</div>
+        <button class="round" data-x="up" ${noT?"disabled":""}>＋</button></div>
+      <div class="btnrow">${Object.keys(MODES).map(m=>`<button class="sbtn ${d.mode===m?"sel":""}" data-x="mode" data-m="${m}" ${d.on?"":"disabled"}>${MODE_ICON[m]} ${MODES[m]}</button>`).join("")}</div>
+      <div class="btnrow"><button class="sbtn ${d.on?"":"sel"}" data-x="off">オフ</button><button class="sbtn ${d.on?"sel":""}" data-x="on">オン</button></div>`;
+  } else if (d.type==="lock"){
+    h = `<div style="font-size:80px">${d.locked?"🔒":"🔓"}</div>
+      <div class="btnrow"><button class="sbtn ${d.locked?"":"sel"}" data-x="unlock">解錠</button><button class="sbtn ${d.locked?"sel":""}" data-x="lock">施錠</button></div>`;
+  } else if (d.type==="cover"){
+    h = `<div class="vs" id="cv" style="height:240px"><i style="height:${d.open?0:100}%;background:#8e8e93"></i></div>
+      <div class="btnrow"><button class="sbtn ${d.open?"sel":""}" data-x="open">開ける</button><button class="sbtn ${d.open?"":"sel"}" data-x="close">閉める</button></div>`;
+  }
+  else if (d.type==="media"){
+    h = `<div style="font-size:72px">${d.playing?"▶️":"⏸️"}</div>
+      <div class="btnrow"><button class="sbtn" data-x="play" ${d.on?"":"disabled"}>⏯ 再生／一時停止</button></div>
+      <div class="btnrow"><button class="sbtn ${d.on?"":"sel"}" data-x="off">オフ</button><button class="sbtn ${d.on?"sel":""}" data-x="on">オン</button></div>`;
+  } else if (d.type==="vacuum"){
+    h = `<div style="font-size:72px">🧹</div><div class="big" style="font-size:30px">${VAC[d.st]}</div>
+      <div class="btnrow">
+        <button class="sbtn ${d.st==="clean"?"sel":""}" data-x="vclean">掃除開始</button>
+        <button class="sbtn ${d.st==="pause"?"sel":""}" data-x="vpause" ${d.st==="clean"?"":"disabled"}>一時停止</button>
+        <button class="sbtn ${d.st==="back"||d.st==="dock"?"sel":""}" data-x="vback">充電台へ</button></div>
+      <div style="color:var(--sub);font-size:13px">※ 今は見た目だけ。ルンバを画面とつなげるかは未確認</div>`;
+  } else if (d.type==="camera"){
+    h = `<div class="cam">📹 寝室の見守りカメラ（Ring）<br>この画面には映像を出せない可能性が高いです<br>（Ring は外部とつなぐ窓口を公開していないため）</div>
+      <div style="color:var(--sub);font-size:14px">映像は Ring アプリか Echo Show 5 で見てください</div>`;
+  } else if (d.type==="bell"){
+    const lk = D("lock");
+    h = `<div class="cam">📷 カメラ映像<br>（インターホン未導入のため表示できません）</div>
+      <div style="color:var(--sub)">玄関の鍵：${lk.locked ? "🔒 施錠中" : "🔓 解錠中"}</div>
+      <div class="btnrow"><button class="sbtn" data-x="ringtest">🔔 テスト呼び出し</button>
+        <button class="sbtn ${lk.locked?"sel":""}" data-x="dooropen" ${lk.locked?"":"disabled"}>🔓 玄関を開ける</button></div>`;
+  }
+  $("#dBody").innerHTML = h;
+  if (d.type==="light" && !d.noDim) bindSlider($("#vs"), d);
+  if (d.type==="switch" || d.noDim) $("#sw").onclick = () => { d.on = !d.on; commit(d); };
+  if (d.type==="cover")  $("#cv").onclick = () => { d.open = !d.open; commit(d); };
+}
+$("#dBody").addEventListener("click", async e => {
+  const b = e.target.closest("[data-x]"); if (!b || !openId) return;
+  const d = D(openId), x = b.dataset.x;
+  if (x==="ringtest"){ closeDetail(); ringDoor(); return; }
+  if (x==="dooropen"){ await unlockDoor(); return; }
+  if (x==="vclean" || x==="vpause" || x==="vback"){ d.st = {vclean:"clean", vpause:"pause", vback:"back"}[x]; commit(d); return; }
+  if (x==="play"){ d.playing = !d.playing; commit(d); return; }
+  if (x==="on" || x==="off"){ d.on = x==="on"; if (!d.on && d.type==="media") d.playing = false; }
+  else if (x==="up")   d.temp = Math.min(30, d.temp + 0.5);
+  else if (x==="down") d.temp = Math.max(16, d.temp - 0.5);
+  else if (x==="mode") d.mode = b.dataset.m;
+  else if (x==="open" || x==="close") d.open = x==="open";
+  else if (x==="lock") d.locked = true;
+  else if (x==="unlock"){ if (!d.locked) return; if (!await ask("玄関の鍵を開けますか？")) return; d.locked = false; }
+  commit(d, x==="up" || x==="down");
+});
+
+/* ----- インターホン ----- */
+const hhmm = t => { const n = new Date(t); return n.getHours() + ":" + String(n.getMinutes()).padStart(2,"0"); };
+let ringTimer = null, actx = null;
+function chime(){
+  // ピン・ポーン（短い2音。音声ファイルは使わない）
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    [[880,0],[698,0.45]].forEach(([f,s]) => {
+      const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + s;
+      o.frequency.value = f; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t+0.02); g.gain.exponentialRampToValueAtTime(0.0001, t+0.9);
+      o.start(t); o.stop(t+0.95);
+    });
+  }catch(e){}
+}
+function ringDoor(){
+  const d = D("door"); d.last = Date.now(); saveDevs(); render();
+  $("#ringTime").textContent = hhmm(d.last) + " の呼び出し";
+  $("#ringOpen").disabled = !D("lock").locked;
+  $("#ring").classList.add("show"); chime();
+  clearTimeout(ringTimer); ringTimer = setTimeout(closeRing, 60*1000);
+}
+function closeRing(){ $("#ring").classList.remove("show"); clearTimeout(ringTimer); }
+async function unlockDoor(){
+  const lk = D("lock"); if (!lk.locked) return true;
+  if (!await ask("玄関の鍵を開けますか？")) return false;
+  lk.locked = false; toast("🔓 解錠しました"); commit(lk); return true;
+}
+$("#ringClose").addEventListener("click", closeRing);
+$("#ringOpen").addEventListener("click", async () => { if (await unlockDoor()) closeRing(); });
+
+/* 明るさのたてスライダー（指でなぞる） */
+function bindSlider(el, d){
+  const fill = el.querySelector("i");
+  const set = e => {
+    const r = el.getBoundingClientRect();
+    const p = Math.max(0, Math.min(100, Math.round((1 - (e.clientY - r.top) / r.height) * 20) * 5));
+    if (p === 0) d.on = false; else { d.on = true; d.level = p; }
+    fill.style.height = (d.on ? d.level : 0) + "%";
+    $("#vsLbl").textContent = d.on ? d.level + "%" : "オフ";
+  };
+  el.onpointerdown = e => { el.setPointerCapture(e.pointerId); set(e); el.onpointermove = set; };
+  el.onpointerup = el.onpointercancel = () => { if (!el.onpointermove) return; el.onpointermove = null; commit(d, true); };
+}
+
+/* ========== Home Assistant 送信 ========== */
+async function haCall(domain, service, data){
+  const url = cfg.haUrl.replace(/\/+$/,"") + `/api/services/${domain}/${service}`;
+  const res = await fetch(url, {method:"POST", headers:{"Authorization":"Bearer "+cfg.haToken, "Content-Type":"application/json"}, body:JSON.stringify(data)});
+  if (!res.ok) throw new Error("HTTP " + res.status);
+}
+async function sendHA(d){
+  const ent = (cfg.map||{})[d.id]; if (!ent) return;
+  const dom = ent.split(".")[0], base = {entity_id:ent};
+  try{
+    if (d.type==="light" && d.noDim) await haCall(dom, d.on?"turn_on":"turn_off", base);
+    else if (d.type==="light") await haCall("light", d.on?"turn_on":"turn_off", d.on ? {...base, brightness_pct:d.level} : base);
+    else if (d.type==="switch") await haCall(dom, d.on?"turn_on":"turn_off", base);
+    else if (d.type==="media"){ await haCall("media_player", d.on?"turn_on":"turn_off", base); if (d.on) await haCall("media_player", d.playing?"media_play":"media_pause", base); }
+    else if (d.type==="vacuum") await haCall("vacuum", {clean:"start", pause:"pause", back:"return_to_base", dock:"return_to_base"}[d.st], base);
+    else if (d.type==="lock") await haCall("lock", d.locked?"lock":"unlock", base);
+    else if (d.type==="cover") await haCall("cover", d.open?"open_cover":"close_cover", base);
+    else if (d.type==="climate"){
+      await haCall("climate", "set_hvac_mode", {...base, hvac_mode: d.on ? d.mode : "off"});
+      if (d.on && d.mode!=="fan_only") await haCall("climate", "set_temperature", {...base, temperature:d.temp});
+    }
+  }catch(err){ toast("⚠️ 連携エラー：" + d.name + "（" + err.message + "）"); }
+}
+
+/* ========== シーン ========== */
+const SCENES = {
+  out:   {msg:"おでかけ：消灯・エアコン停止・施錠", f(){ setLights(false); D("aircon").on=false; D("aircon2").on=false;D("lock").locked=true; D("curtain").open=false; D("tv").on=false; D("fan").on=false; }},
+  home:  {msg:"ただいま：ダウンライト・畳コーナー点灯・エアコンON", f(){ D("down").on=true; Object.assign(D("tatami"),{on:true,level:80}); D("aircon").on=true; D("curtain").open=true; }},
+  sleep: {msg:"おやすみ：寝室の照明だけオン・寝室エアコンON・施錠", f(){ setLights(false); D("bedroom").on = true; D("aircon").on=false; D("aircon2").on=true;D("tv").on=false; D("lock").locked=true; D("curtain").open=false; }},
+  movie: {msg:"映画：畳コーナーだけ薄明かり・テレビON", f(){ setLights(false); Object.assign(D("tatami"),{on:true,level:15}); D("tv").on=true; D("curtain").open=false; }}
+};
+function setLights(on){ devs.filter(d => d.type==="light").forEach(d => d.on = on); }
+document.querySelectorAll("[data-scene]").forEach(b => b.addEventListener("click", () => {
+  const s = SCENES[b.dataset.scene]; s.f(); saveDevs(); render(); toast(s.msg);
+  b.classList.add("flash"); setTimeout(() => b.classList.remove("flash"), 900);
+  if (live()) devs.forEach(sendHA);
+}));
+$("#allOff").addEventListener("click", () => {
+  setLights(false); saveDevs(); render(); toast("照明をすべて消しました");
+  if (live()) devs.filter(d => d.type==="light").forEach(sendHA);
+});
+
+/* ========== 時計 ========== */
+const WEEK = "日月火水木金土";
+function tick(){
+  const n = new Date(), p = v => String(v).padStart(2,"0");
+  $("#time").textContent = `${n.getHours()}:${p(n.getMinutes())}`;
+  $("#sec").textContent = p(n.getSeconds());
+  $("#date").textContent = `${n.getMonth()+1}月${n.getDate()}日 ${WEEK[n.getDay()]}曜日`;
+}
+tick(); setInterval(tick, 1000);
+
+/* ========== 天気 ========== */
+function wcode(c){
+  if (c===0) return ["☀️","快晴"];
+  if (c===1) return ["🌤️","晴れ"];
+  if (c===2) return ["⛅","晴れ時々くもり"];
+  if (c===3) return ["☁️","くもり"];
+  if (c===45||c===48) return ["🌫️","霧"];
+  if (c>=51&&c<=57) return ["🌦️","霧雨"];
+  if (c>=61&&c<=67) return ["🌧️","雨"];
+  if (c>=71&&c<=77) return ["🌨️","雪"];
+  if (c>=80&&c<=82) return ["🌦️","にわか雨"];
+  if (c===85||c===86) return ["🌨️","にわか雪"];
+  if (c>=95) return ["⛈️","雷雨"];
+  return ["🌡️","—"];
+}
+function showWeather(w, isLive){
+  const [ic, txt] = wcode(w.code);
+  $("#wIcon").textContent = ic;
+  $("#wTemp").textContent = Math.round(w.temp) + "°";
+  $("#wDesc").textContent = `${txt}・湿度 ${w.hum}%`;
+  $("#wRange").textContent = `最高 ${Math.round(w.max)}° 最低 ${Math.round(w.min)}° 降水 ${w.pop ?? "-"}%`;
+  $("#wPlace").textContent = cfg.place || "";
+  $("#wBadge").textContent = isLive ? "更新 " + new Date().toTimeString().slice(0,5) : "見本";
+  $("#wBadge").classList.toggle("live", isLive);
+}
+const MOCK_WEATHER = {code:1, temp:18, hum:55, max:21, min:12, pop:10};
+async function loadWeather(){
+  if (!cfg.weather || cfg.lat==="" || cfg.lon===""){ showWeather(MOCK_WEATHER, false); return; }
+  try{
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${cfg.lat}&longitude=${cfg.lon}`
+      + `&current=temperature_2m,relative_humidity_2m,weather_code`
+      + `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=1&timezone=auto`;
+    const r = await fetch(u); if (!r.ok) throw 0;
+    const j = await r.json();
+    showWeather({code:j.current.weather_code, temp:j.current.temperature_2m, hum:j.current.relative_humidity_2m,
+      max:j.daily.temperature_2m_max[0], min:j.daily.temperature_2m_min[0], pop:j.daily.precipitation_probability_max[0]}, true);
+  }catch(e){ showWeather(MOCK_WEATHER, false); $("#wDesc").textContent = "取得できません（見本）"; }
+}
+loadWeather(); setInterval(loadWeather, 30*60*1000);
+
+/* ========== 注意報・警報（気象庁） ========== */
+// 気象庁の警報ページ（2026年の新しい形式・data/r8）から取り出した「番号 → 種類:レベル」の対応
+const WARN_CODE = {"10":"rain:20","12":"snow:20","13":"wind_snow:20","14":"thunder:20","15":"wind:20","16":"wave:20","17":"snow_melting:20","19":"tide:20","20":"fog:20","21":"dry:20","22":"avalanche:20","23":"cold:20","24":"frost:20","25":"ice_accretion:20","26":"snow_accretion:20","29":"landslide:20","30":"flood:30","31":"flood:30","32":"wind_snow:50","33":"rain:50","35":"wind:50","36":"snow:50","37":"wave:50","38":"tide:50","39":"landslide:50","40":"flood:40","41":"flood:40","43":"rain:40","48":"tide:40","49":"landslide:40","51":"flood:50","53":"flood:50","03":"rain:30","09":"landslide:30","08":"tide:30","05":"wind:30","02":"wind_snow:30","06":"snow:30","07":"wave:30"};
+const WARN_ELEM = {rain:"大雨", landslide:"土砂災害", flood:"氾濫", tide:"高潮", wind:["強風","暴風"], wind_snow:["風雪","暴風雪"], snow:"大雪", wave:"波浪", thunder:"雷", snow_melting:"融雪", fog:"濃霧", dry:"乾燥", avalanche:"なだれ", cold:"低温", frost:"霜", ice_accretion:"着氷", snow_accretion:"着雪"};
+const WARN_LV = {20:"注意報", 30:"警報", 40:"危険警報", 50:"特別警報"};
+function warnName(code){
+  const v = WARN_CODE[code];
+  if (!v) return {name:`警報・注意報（番号${code}）`, lv:20};
+  const [el, l] = v.split(":"), lv = +l;
+  let base = WARN_ELEM[el] || el;
+  if (Array.isArray(base)) base = lv >= 30 ? base[1] : base[0];
+  return {name: base + WARN_LV[lv], lv};
+}
+let alertNow = {list:[], head:"", at:""};
+async function loadAlerts(){
+  const box = $("#wAlert"), a = cfg.alert;
+  if (!a || !a.code){ box.hidden = true; $("#wLine3").hidden = false; return; }
+  try{
+    const r = await fetch(`https://www.jma.go.jp/bosai/warning/data/r8/${a.office}.json`, {cache:"no-store"});
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json(), arr = Array.isArray(j) ? j : [j];
+    const map = {}, heads = []; let at = "";
+    arr.forEach(e => {
+      const it = (e.warning?.class20Items || []).find(x => x.areaCode === a.code); if (!it) return;
+      let hit = false;
+      (it.kinds || []).forEach(k => {
+        if (!k.code || ["解除","発表警報・注意報はなし"].includes(k.status)) return;
+        const w = warnName(k.code); hit = true;
+        if (!map[w.name] || map[w.name].lv < w.lv) map[w.name] = {...w, status:k.status};
+      });
+      if (hit){ if (e.headlineText) heads.push(e.headlineText); if (e.reportDatetime > at) at = e.reportDatetime; }
+    });
+    alertNow = {list: Object.values(map).sort((x,y) => y.lv - x.lv), head: heads.join("\n"), at};
+    if (!alertNow.list.length){ box.hidden = true; $("#wLine3").hidden = false; return; }
+    const show = alertNow.list.slice(0, 3);
+    box.innerHTML = show.map(w => `<span class="al l${w.lv}">${w.name}</span>`).join("") + (alertNow.list.length > 3 ? `<span class="al err">ほか${alertNow.list.length-3}</span>` : "");
+    box.hidden = false; $("#wLine3").hidden = true;
+  }catch(e){
+    alertNow = {list:[], head:"", at:""};
+    box.innerHTML = `<span class="al err">警報：取得できません</span>`; box.hidden = false; $("#wLine3").hidden = true;
+  }
+}
+$("#wAlert").addEventListener("click", () => {
+  if (!alertNow.list.length) return;
+  $("#alTitle").textContent = `${cfg.alert.name}の注意報・警報`;
+  $("#alList").innerHTML = alertNow.list.map(w => `<li><span class="al l${w.lv}">${w.name}</span><span style="color:var(--sub);font-size:14px">${w.status}</span></li>`).join("");
+  $("#alHead").textContent = alertNow.head;
+  $("#alTime").textContent = alertNow.at ? "気象庁の発表 " + new Date(alertNow.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
+  $("#alertModal").classList.add("show");
+});
+$("#alClose").addEventListener("click", () => $("#alertModal").classList.remove("show"));
+loadAlerts(); setInterval(loadAlerts, 10*60*1000);
+
+// 設定画面：市町村の名前から地域をさがす（気象庁の地域一覧は、さがすときだけ読む）
+let areaJson = null, pendingAlert;
+$("#btnAlertFind").addEventListener("click", async () => {
+  const q = $("#cAlertQ").value.trim(); if (!q) return toast("市町村の名前を入れてください");
+  try{
+    areaJson = areaJson || await (await fetch("https://www.jma.go.jp/bosai/common/const/area.json")).json();
+  }catch(e){ return toast("地域の一覧を読めませんでした"); }
+  const A = areaJson, hits = Object.entries(A.class20s).filter(([c,v]) => v.name.includes(q) || (v.kana||"").includes(q)).slice(0, 50);
+  const sel = $("#cAlertSel");
+  if (!hits.length){ sel.innerHTML = `<option value="">見つかりませんでした</option>`; return; }
+  sel.innerHTML = hits.map(([c,v]) => {
+    const c10 = A.class15s[v.parent]?.parent, office = A.class10s[c10]?.parent, oname = A.offices[office]?.name || "";
+    return `<option value="${c}|${office}|${esc(v.name)}">${esc(v.name)}（${esc(oname)}）</option>`;
+  }).join("");
+  toast(`${hits.length}件 見つかりました。選んで「保存」を押してください`);
+});
+$("#btnAlertOff").addEventListener("click", () => { pendingAlert = null; $("#cAlertNow").textContent = "表示しない（保存で確定）"; $("#cAlertSel").innerHTML = `<option value="">（さがすと、ここに出ます）</option>`; });
+
+/* ========== 室温・湿度（モックのセンサー） ========== */
+const cur = {t:23.0, hu:52};   // 今は作りものの数字（本物のセンサーにつなぐまで）
+function sensorStep(){
+  const ac = D("aircon");
+  let t = cur.t + (Math.random()-.5)*.2, hu = cur.hu + Math.round((Math.random()-.5)*2);
+  if (ac.on && ac.mode!=="fan_only") t += (ac.temp - t)*0.08;
+  if (ac.on && ac.mode==="dry") hu -= 1;
+  cur.t = +Math.min(32, Math.max(14, t)).toFixed(1); cur.hu = Math.min(80, Math.max(30, hu));
+  showEnv(); renderChips();
+}
+function showEnv(){
+  $("#nowT").textContent = cur.t.toFixed(1);
+  $("#nowH").textContent = cur.hu;
+  const c = $("#comfort");
+  const [txt, col] = cur.t>=28 ? ["暑い","var(--red)"] : cur.t<=18 ? ["寒い","var(--cyan)"] : cur.hu<=35 ? ["乾燥ぎみ","var(--yellow)"] : cur.hu>=65 ? ["ジメジメ","var(--cyan)"] : ["快適","var(--green)"];
+  c.textContent = txt; c.style.color = col;
+}
+setInterval(sensorStep, 30*1000);
+
+/* ========== 買い物リスト ========== */
+let shop = store.get("sh_shop", {items:[], freq:{}});
+const saveShop = () => store.set("sh_shop", shop);
+const esc = s => s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function renderShop(){
+  const items = [...shop.items.filter(i=>!i.done), ...shop.items.filter(i=>i.done)];
+  $("#shopList").innerHTML = items.length
+    ? items.map(i => `<li class="${i.done?"done":""}" data-id="${i.id}"><span class="ck">${i.done?"✓":""}</span><span class="nm">${esc(i.name)}</span><button class="del" data-del="1" aria-label="削除">✕</button></li>`).join("")
+    : `<li class="empty" style="border:0;cursor:default">買う物はありません</li>`;
+  const left = shop.items.filter(i=>!i.done).length;
+  $("#shopCount").textContent = left ? `あと ${left}` : "なし";
+  // よく買う物（入れた回数が多い順。今リストに残っている物は出さない）
+  const inList = new Set(shop.items.filter(i=>!i.done).map(i=>i.name));
+  const top = Object.entries(shop.freq).filter(([n]) => !inList.has(n)).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  $("#freq").innerHTML = top.map(([n]) => `<button class="fq" data-n="${esc(n)}">＋${esc(n)}</button>`).join("");
+  $("#freq").style.display = top.length ? "" : "none";
+}
+function addShop(name, quiet){
+  name = name.trim().slice(0, 40); if (!name) return false;
+  const same = shop.items.find(i => i.name === name);
+  if (same && !same.done){ if (!quiet) toast(`「${name}」はもう入っています`); return false; }
+  if (same) same.done = false;
+  else shop.items.push({id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name, done:false});
+  shop.freq[name] = (shop.freq[name] || 0) + 1;
+  saveShop(); renderShop();
+  return true;
+}
+
+/* 音声入力：「牛乳と卵とバナナ」→ 3つに分けて追加 */
+function splitSpoken(text){
+  text = text.replace(/[。！？!?]/g, "")
+    .replace(/(を)?(買う|買って|買ってきて|追加して|追加|お願いします|お願い|ください)$/, "");
+  return text.split(/[、,，\s]+/).flatMap(part => {
+    const p = part.split("と");
+    return p.some(s => s === "") ? [part] : p;   // 「とうふ」のように頭や終わりの「と」は分けない
+  }).map(s => s.trim()).filter(Boolean);
+}
+function addSpoken(text){
+  const names = splitSpoken(text), added = names.filter(n => addShop(n, true));
+  const dup = names.filter(n => !added.includes(n));
+  if (added.length) toast("追加：" + added.join("・") + (dup.length ? `（${dup.join("・")} は入っています）` : ""));
+  else if (dup.length) toast(`${dup.join("・")} はもう入っています`);
+  else toast("聞き取れませんでした");
+}
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+const micIdle = () => { $("#micBtn").textContent = "🎤 話して追加"; $("#micBtn").classList.remove("rec"); };
+function showKeyboard(on){
+  $("#shopForm").hidden = !on; $("#kbBtn").classList.toggle("sel", on);
+  if (on) $("#shopIn").focus();
+}
+if (!SR){ $("#voiceRow").hidden = true; $("#voiceRow").style.display = "none"; showKeyboard(true); }
+$("#kbBtn").addEventListener("click", () => showKeyboard($("#shopForm").hidden));
+$("#micBtn").addEventListener("click", () => {
+  if (rec){ rec.stop(); return; }
+  try{
+    rec = new SR(); rec.lang = "ja-JP"; rec.interimResults = true; rec.maxAlternatives = 1;
+    let finalText = "";
+    rec.onresult = e => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++){
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript; else interim += e.results[i][0].transcript;
+      }
+      $("#micBtn").textContent = "「" + (finalText + interim) + "」";
+    };
+    rec.onerror = e => {
+      const m = {"not-allowed":"マイクが許可されていません（ブラウザの設定で許可してください）", "service-not-allowed":"マイクが許可されていません",
+        "no-speech":"聞き取れませんでした", "network":"ネットにつながっていないため音声入力が使えません", "audio-capture":"マイクが見つかりません"}[e.error];
+      if (m) toast(m);
+      finalText = "";
+    };
+    rec.onend = () => { rec = null; micIdle(); if (finalText) addSpoken(finalText); };
+    rec.start();
+    $("#micBtn").textContent = "🎤 聞いています…（もう一度押すと止まる）"; $("#micBtn").classList.add("rec");
+  }catch(err){ rec = null; micIdle(); toast("音声入力を始められませんでした"); }
+});
+$("#shopForm").addEventListener("submit", e => { e.preventDefault(); addShop($("#shopIn").value); $("#shopIn").value = ""; });
+$("#freq").addEventListener("click", e => { const b = e.target.closest(".fq"); if (b) addShop(b.dataset.n); });
+$("#shopList").addEventListener("click", e => {
+  const li = e.target.closest("li[data-id]"); if (!li) return;
+  const idx = shop.items.findIndex(i => i.id === li.dataset.id);
+  if (e.target.closest("[data-del]")) shop.items.splice(idx, 1);
+  else shop.items[idx].done = !shop.items[idx].done;
+  saveShop(); renderShop();
+});
+$("#shopClear").addEventListener("click", async () => {
+  const n = shop.items.filter(i=>i.done).length;
+  if (!n) return toast("チェックした物はありません");
+  if (!await ask(`チェックした ${n}つを消しますか？`)) return;
+  shop.items = shop.items.filter(i=>!i.done); saveShop(); renderShop();
+});
+renderShop();
+
+/* ========== 通知・確認 ========== */
+let tt;
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), 2200); }
+function ask(msg){
+  return new Promise(ok => {
+    $("#cfmMsg").textContent = msg; $("#cfmModal").classList.add("show");
+    const done = v => { $("#cfmModal").classList.remove("show"); $("#cfmYes").onclick = $("#cfmNo").onclick = null; ok(v); };
+    $("#cfmYes").onclick = () => done(true); $("#cfmNo").onclick = () => done(false);
+  });
+}
+
+/* ========== 設定画面 ========== */
+function openSettings(){
+  $("#cWeather").checked = cfg.weather; $("#cPlace").value = cfg.place; $("#cLat").value = cfg.lat; $("#cLon").value = cfg.lon;
+  $("#cHaUrl").value = cfg.haUrl; $("#cHaToken").value = cfg.haToken; $("#cWake").checked = cfg.wake; $("#cPin").value = cfg.pin || "";
+  $("#cMap").value = JSON.stringify(cfg.map, null, 2);
+  pendingAlert = undefined; $("#cAlertQ").value = "";
+  $("#cAlertNow").textContent = cfg.alert?.name || "未設定";
+  $("#cAlertSel").innerHTML = `<option value="">（さがすと、ここに出ます）</option>`;
+  $("#setModal").classList.add("show");
+}
+function readForm(){
+  let map;
+  try{ map = JSON.parse($("#cMap").value || "{}"); }catch(e){ toast("⚠️ entity_id の対応表の書き方が正しくありません"); return null; }
+  return {weather:$("#cWeather").checked, place:$("#cPlace").value.trim(), lat:$("#cLat").value.trim(), lon:$("#cLon").value.trim(),
+    haUrl:$("#cHaUrl").value.trim(), haToken:$("#cHaToken").value.trim(), map, wake:$("#cWake").checked,
+    pin:$("#cPin").value.trim().replace(/\D/g,""),
+    alert: (() => {
+      const v = $("#cAlertSel").value;
+      if (v){ const [code, office, name] = v.split("|"); return {code, office, name}; }
+      return pendingAlert === undefined ? cfg.alert : pendingAlert;
+    })()};
+}
+$("#btnSet").addEventListener("click", openSettings);
+$("#btnCancel").addEventListener("click", () => $("#setModal").classList.remove("show"));
+$("#btnSave").addEventListener("click", () => {
+  const f = readForm(); if (!f) return;
+  cfg = f; store.set("sh_cfg", cfg);
+  $("#setModal").classList.remove("show"); render(); loadWeather(); loadAlerts(); wake(); toast("設定を保存しました");
+});
+$("#btnTest").addEventListener("click", async () => {
+  const f = readForm(); if (!f) return;
+  if (!f.haUrl || !f.haToken) return toast("URL とトークンを入れてください");
+  try{
+    const r = await fetch(f.haUrl.replace(/\/+$/,"") + "/api/", {headers:{"Authorization":"Bearer "+f.haToken}});
+    toast(r.ok ? "✅ Home Assistant につながりました" : "⚠️ つながりましたがエラー（" + r.status + "）");
+  }catch(e){ toast("⚠️ つながりません（URL か CORS 設定を確認）"); }
+});
+$("#btnGeo").addEventListener("click", () => {
+  if (!navigator.geolocation) return toast("この端末では位置を取得できません");
+  navigator.geolocation.getCurrentPosition(
+    p => { $("#cLat").value = p.coords.latitude.toFixed(3); $("#cLon").value = p.coords.longitude.toFixed(3); toast("位置を入れました（保存を押してください）"); },
+    () => toast("位置を取得できませんでした"), {timeout:10000});
+});
+$("#btnReset").addEventListener("click", async () => {
+  if (!await ask("設定・デバイス状態・買い物リストをすべて初期化しますか？")) return;
+  ["sh_cfg","sh_devs","sh_shop","sh_memo"].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+  location.reload();
+});
+
+/* ========== 全画面・画面を消さない ========== */
+$("#btnFull").addEventListener("click", () => {
+  const el = document.documentElement;
+  if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else (el.requestFullscreen || el.webkitRequestFullscreen || (()=>toast("この端末は全画面に未対応です"))).call(el);
+});
+let wl = null;
+async function wake(){
+  try{
+    if (cfg.wake && "wakeLock" in navigator){ if (!wl) { wl = await navigator.wakeLock.request("screen"); wl.addEventListener("release", ()=> wl = null); } }
+    else if (wl){ await wl.release(); wl = null; }
+  }catch(e){}
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState==="visible") wake(); });
+wake();
+
+/* ========== 日常用 ⇔ 管理用 ========== */
+let admTimer = null;
+function setMode(m){
+  mode = m;
+  document.body.classList.toggle("admin", m==="admin");
+  document.body.classList.toggle("daily", m==="daily");
+  $("#title").textContent = m==="admin" ? "わが家（管理用）" : "わが家";
+  $("#devLbl").textContent = m==="admin" ? "すべての機器" : "デバイス";
+  $("#devHint").textContent = m==="admin" ? "☆＝日常用に出す ・ 右上の印＝導入の状況" : "タップで ON/OFF ・ 長押しで くわしく";
+  render(); armAdminTimer();
+}
+// 管理用のまま3分さわらなければ、日常用に戻す
+function armAdminTimer(){
+  clearTimeout(admTimer);
+  if (mode==="admin") admTimer = setTimeout(() => { if (!$("#setModal").classList.contains("show")) { setMode("daily"); toast("日常用にもどりました"); } else armAdminTimer(); }, 3*60*1000);
+}
+document.addEventListener("pointerdown", () => { if (mode==="admin") armAdminTimer(); });
+function askPin(){
+  return new Promise(ok => {
+    $("#pinIn").value = ""; $("#pinModal").classList.add("show"); setTimeout(() => $("#pinIn").focus(), 50);
+    const done = v => { $("#pinModal").classList.remove("show"); $("#pinOk").onclick = $("#pinNo").onclick = null; ok(v); };
+    $("#pinOk").onclick = () => done($("#pinIn").value === String(cfg.pin));
+    $("#pinNo").onclick = () => done(null);
+  });
+}
+$("#btnAdmin").addEventListener("click", async () => {
+  if (cfg.pin){
+    const r = await askPin();
+    if (r === null) return;
+    if (!r){ toast("暗証番号がちがいます"); return; }
+  }
+  setMode("admin");
+});
+$("#btnDaily").addEventListener("click", () => setMode("daily"));
+
+showEnv();
+setMode("daily");
+</script>
+</body>
+</html>
