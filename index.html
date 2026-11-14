@@ -203,6 +203,17 @@ form.add[hidden]{display:none}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast{max-width:min(860px,92vw);text-align:center;line-height:1.5;border-radius:22px}
 
+/* 暗い画面（しばらくさわらないと出る。タップで元にもどる） */
+#dim{position:fixed;inset:0;z-index:30;background:#0e0b08;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:rgba(236,225,207,.55);cursor:pointer;transition:opacity .4s}
+#dim.show{display:flex}
+#dim.night{background:#000;color:rgba(236,225,207,.32)}
+#dimTime{font-size:120px;font-weight:200;letter-spacing:2px;font-variant-numeric:tabular-nums;line-height:1}
+#dimDate{font-size:22px}
+#dimWx{font-size:20px;margin-top:6px}
+#dimAlert{display:flex;gap:6px;margin-top:6px}
+#dimAlert .al{font-size:15px;opacity:.85}
+#dimHint{position:absolute;bottom:22px;font-size:14px;opacity:.6}
+
 /* 幅が少し狭いとき（iPad mini の横向き 1133 など）は、上の段を小さくまとめる */
 @media (max-width:1240px) and (min-width:981px){
   header{gap:14px}
@@ -388,6 +399,8 @@ form.add[hidden]{display:none}
     <div class="sec">画面</div>
     <div class="fgrid">
       <label>画面を消さない</label><div><input type="checkbox" id="cWake" style="width:24px;height:24px"></div>
+      <label>暗くするまでの時間</label>
+      <select id="cDim"><option value="30">30秒さわらないと暗くする</option><option value="60">1分</option><option value="180">3分</option><option value="600">10分</option><option value="0">暗くしない</option></select>
       <label>管理用の暗証番号</label><input id="cPin" type="password" inputmode="numeric" maxlength="8" placeholder="空欄なら暗証番号なし（数字4〜8けた）">
     </div>
     <div class="note">暗証番号は、子どもがうっかり管理用を開かないための簡単なカギです。防犯のための強いカギではありません。</div>
@@ -436,6 +449,15 @@ form.add[hidden]{display:none}
 </div>
 
 <div id="toast"></div>
+
+<!-- 暗い画面 -->
+<div id="dim">
+  <div id="dimTime">--:--</div>
+  <div id="dimDate"></div>
+  <div id="dimWx"></div>
+  <div id="dimAlert"></div>
+  <div id="dimHint">タップでもどります</div>
+</div>
 
 <script>
 "use strict";
@@ -697,6 +719,7 @@ function ringDoor(sample){
   $("#ringOpen").textContent = D("lock").locked ? "🔓 玄関を開ける" : "🔓 玄関は開いています";
   const hist = sample ? [now - 3*3600e3, now - 26*3600e3] : (d.hist || []).slice(1);
   $("#ringHist").innerHTML = hist.length ? "これまでの来客<br>" + hist.map(t => "・" + new Date(t).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})).join("<br>") : "";
+  $("#dim").classList.remove("show");   // 暗い画面のときは明るくもどす
   $("#ring").classList.add("show"); if (!sample) chime();
   let left = 60;
   const showLeft = () => $("#ringLeft").textContent = `${left}秒で自動で閉じます`;
@@ -1124,6 +1147,7 @@ function ask(msg){
 function openSettings(){
   $("#cWeather").checked = cfg.weather; $("#cPlace").value = cfg.place; $("#cLat").value = cfg.lat; $("#cLon").value = cfg.lon;
   $("#cHaUrl").value = cfg.haUrl; $("#cHaToken").value = cfg.haToken; $("#cWake").checked = cfg.wake; $("#cPin").value = cfg.pin || "";
+  $("#cDim").value = String(cfg.dimSec ?? 60);
   $("#cMap").value = JSON.stringify(cfg.map, null, 2);
   $("#cSbUrl").value = cfg.sbUrl || ""; $("#cSbKey").value = cfg.sbKey || ""; renderSbMap();
   pendingAlert = undefined; $("#cAlertQ").value = "";
@@ -1137,7 +1161,7 @@ function readForm(){
   return {weather:$("#cWeather").checked, place:$("#cPlace").value.trim(), lat:$("#cLat").value.trim(), lon:$("#cLon").value.trim(),
     haUrl:$("#cHaUrl").value.trim(), haToken:$("#cHaToken").value.trim(), map, wake:$("#cWake").checked,
     pin:$("#cPin").value.trim().replace(/\D/g,""),
-    sbUrl:$("#cSbUrl").value.trim(), sbKey:$("#cSbKey").value.trim(),
+    sbUrl:$("#cSbUrl").value.trim(), sbKey:$("#cSbKey").value.trim(), dimSec:+$("#cDim").value,
     sbMap: (() => {
       const sels = [...document.querySelectorAll("#sbMapBox select[data-sb]")];
       if (!sels.length) return cfg.sbMap || {};
@@ -1155,7 +1179,7 @@ $("#btnSave").addEventListener("click", () => {
   const f = readForm(); if (!f) return;
   cfg = f; store.set("sh_cfg", cfg);
   if (!sbOn()) envLive = false;
-  $("#setModal").classList.remove("show"); render(); loadWeather(); loadAlerts(); sbPoll(); wake(); toast("設定を保存しました");
+  $("#setModal").classList.remove("show"); render(); loadWeather(); loadAlerts(); sbPoll(); wake(); armDim(); toast("設定を保存しました");
 });
 $("#btnTest").addEventListener("click", async () => {
   const f = readForm(); if (!f) return;
@@ -1227,6 +1251,33 @@ $("#btnAdmin").addEventListener("click", async () => {
   setMode("admin");
 });
 $("#btnDaily").addEventListener("click", () => setMode("daily"));
+
+/* ========== 暗い画面（しばらくさわらないと暗くし、タップでもどる） ========== */
+// ページの中で黒い画面をかぶせるだけ。画面の明るさ（バックライト）そのものはページからは変えられない
+let dimTimer = null;
+function armDim(){
+  clearTimeout(dimTimer);
+  const sec = cfg.dimSec ?? 60;
+  if (sec > 0) dimTimer = setTimeout(showDim, sec * 1000);
+}
+function showDim(){
+  if ($("#ring").classList.contains("show")) { armDim(); return; }   // 呼び出し中は暗くしない
+  fillDim();
+  const h = new Date().getHours();
+  $("#dim").classList.toggle("night", h >= 22 || h < 6);   // 夜はさらに暗く
+  $("#dim").classList.add("show");
+}
+function fillDim(){
+  $("#dimTime").textContent = $("#time").textContent;
+  $("#dimDate").textContent = $("#date").textContent;
+  $("#dimWx").textContent = `${$("#wIcon").textContent} ${$("#wTemp").textContent}　室内 ${$("#nowT").textContent}℃ ${$("#nowH").textContent}%`;
+  $("#dimAlert").innerHTML = $("#wAlert").hidden ? "" : $("#wAlert").innerHTML;
+}
+function hideDim(){ $("#dim").classList.remove("show"); armDim(); }
+$("#dim").addEventListener("click", e => { e.stopPropagation(); hideDim(); });
+["pointerdown","keydown"].forEach(ev => document.addEventListener(ev, () => { if (!$("#dim").classList.contains("show")) armDim(); }, true));
+setInterval(() => { if ($("#dim").classList.contains("show")) fillDim(); }, 15*1000);
+armDim();
 
 showEnv();
 setMode("daily");
