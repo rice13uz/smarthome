@@ -201,6 +201,7 @@ form.add[hidden]{display:none}
 #cfmModal{z-index:15}
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(61,50,41,.94);color:#fff;padding:12px 22px;border-radius:99px;font-size:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast{max-width:min(860px,92vw);text-align:center;line-height:1.5;border-radius:22px}
 
 /* 幅が少し狭いとき（iPad mini の横向き 1133 など）は、上の段を小さくまとめる */
 @media (max-width:1240px) and (min-width:981px){
@@ -767,7 +768,8 @@ async function sbCallWith(url, key, body){
 const sbCall = body => sbCallWith(cfg.sbUrl, cfg.sbKey, body);
 function sendDev(d){ if (sbOn()) return sendSB(d); if (haOn()) return sendHA(d); }
 async function sendSB(d){
-  const id = (cfg.sbMap || {})[d.id]; if (!id) return;
+  const id = (cfg.sbMap || {})[d.id];
+  if (!id){ if (mode==="admin") toast(`${d.name}は、SwitchBot の機器が選ばれていません（設定で選んでください）`); return; }
   const c = [];
   if (d.type==="light"){ if (d.on){ c.push(["turnOn"]); if (!d.noDim) c.push(["setBrightness", String(d.level)]); } else c.push(["turnOff"]); }
   else if (d.type==="climate"){
@@ -782,8 +784,10 @@ async function sendSB(d){
   try{
     for (const [command, parameter] of c){
       const b = await sbCall({action:"command", id, command, parameter: parameter ?? "default"});
-      if (b && b.statusCode !== 100) throw new Error(b.message || ("statusCode " + b.statusCode));
+      if (b && b.statusCode !== 100) throw new Error(`${command}：${b.message || ""} statusCode ${b.statusCode}`);
     }
+    // 管理用のときは、送れたことも知らせる（原因を探しやすくするため）
+    if (mode==="admin") toast(`✅ ${d.name}：SwitchBot が受け付けました（${c.map(x => x[0]).join("→")}）`);
   }catch(err){ toast("⚠️ " + d.name + "：送れませんでした（" + err.message + "）"); }
 }
 // 状態を読む（実際の機器だけ。赤外線の機器は読めない）。5分ごと
@@ -1107,7 +1111,7 @@ renderShop();
 
 /* ========== 通知・確認 ========== */
 let tt;
-function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), 2200); }
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), msg.length > 30 ? 6000 : 2200); }
 function ask(msg){
   return new Promise(ok => {
     $("#cfmMsg").textContent = msg; $("#cfmModal").classList.add("show");
