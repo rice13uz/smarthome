@@ -190,6 +190,7 @@ form.add[hidden]{display:none}
 .mbox h3{font-size:20px;margin-bottom:14px}
 .fgrid{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;align-items:center;margin-bottom:12px}
 .fgrid label{font-size:14px;color:var(--sub)}
+.fgrid select{height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--text);font:inherit;font-size:14px;padding:0 10px;width:100%}
 .fgrid input,.mbox textarea{height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--text);font:inherit;font-size:15px;padding:0 12px;width:100%;user-select:text;-webkit-user-select:text}
 .mbox textarea{height:120px;padding:10px 12px;font-family:ui-monospace,Consolas,monospace;font-size:13px;resize:vertical}
 .sec{font-size:15px;font-weight:700;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
@@ -281,7 +282,7 @@ form.add[hidden]{display:none}
 
   <div class="right">
     <section class="card">
-      <div class="chead"><h2>リビングの室温・湿度</h2><span class="sp"></span><span id="comfort" class="badge"></span></div>
+      <div class="chead"><h2>リビングの室温・湿度</h2><span id="envSrc" class="badge">見本</span><span class="sp"></span><span id="comfort" class="badge"></span></div>
       <div class="env">
         <div class="t"><small>🌡️ 室温</small><b id="nowT">--</b><span>°C</span></div>
         <div class="h"><small>💧 湿度</small><b id="nowH">--</b><span>%</span></div>
@@ -361,6 +362,18 @@ form.add[hidden]{display:none}
     </div>
     <div class="mbtns" style="justify-content:flex-start;margin-top:0"><button class="pill danger" id="btnAlertOff">注意報・警報を表示しない</button></div>
 
+    <div class="sec">SwitchBot 連携（Google Apps Script の中継）</div>
+    <div class="note">手順は「SwitchBot連携の手順.md」。中継のアドレスと合い言葉を入れて「つながるか試す」→「機器を読み込む」→ タイルごとに機器を選んで「保存」。</div>
+    <div class="fgrid">
+      <label>中継のアドレス</label><input id="cSbUrl" placeholder="https://script.google.com/macros/s/……/exec">
+      <label>合い言葉</label><input id="cSbKey" type="password" placeholder="中継の PANEL_KEY に入れたもの">
+    </div>
+    <div class="mbtns" style="justify-content:flex-start;margin-top:0">
+      <button class="pill" id="btnSbPing">つながるか試す</button>
+      <button class="pill" id="btnSbLoad">機器を読み込む</button>
+    </div>
+    <div class="fgrid" id="sbMapBox" style="margin-top:10px"></div>
+
     <div class="sec">デバイス連携（Home Assistant・任意）</div>
     <div class="note">URL とトークンを入れると、ボタン操作が Home Assistant に送られます。空欄ならモック（見た目だけ）で動きます。<br>
       ※ Home Assistant 側の configuration.yaml の <code>http: cors_allowed_origins</code> に、このページの開き方に合った値（ローカルファイルなら <code>null</code>）を足す必要があります。</div>
@@ -439,7 +452,9 @@ const DEFAULT_MAP = {
 };
 let cfg = Object.assign({weather:true, place:"熊本市", lat:32.80, lon:130.71, haUrl:"", haToken:"", map:DEFAULT_MAP, wake:false,
   alert:{code:"4310000", office:"430000", name:"熊本市"}}, store.get("sh_cfg", {}));
-const live = () => !!(cfg.haUrl && cfg.haToken);
+const sbOn = () => !!(cfg.sbUrl && cfg.sbKey);        // SwitchBot（Google Apps Script の中継）
+const haOn = () => !!(cfg.haUrl && cfg.haToken);      // Home Assistant
+const live = () => sbOn() || haOn();
 /* 画面の種類：daily＝日常用（ふだん家族が使う） / admin＝管理用（全部の機器・設定） */
 let mode = "daily";
 
@@ -512,7 +527,7 @@ function render(){
   $("#devices").innerHTML = list.length ? list.map(tileHTML).join("")
     : `<div class="empty" style="grid-column:1/-1">日常用に出す機器がありません（管理用の画面で ☆ を押して選びます）</div>`;
   renderChips();
-  $("#modeBadge").textContent = live() ? "Home Assistant 連携中" : "モック動作";
+  $("#modeBadge").textContent = sbOn() ? "SwitchBot 連携中" : haOn() ? "Home Assistant 連携中" : "モック動作";
   $("#modeBadge").classList.toggle("live", live());
   if (openId) renderDetail();
 }
@@ -571,7 +586,7 @@ function commit(d, debounce){
   saveDevs(); render();
   if (!live()) return;
   clearTimeout(d._t);
-  d._t = setTimeout(() => sendHA(d), debounce ? 600 : 0);
+  d._t = setTimeout(() => sendDev(d), debounce ? 600 : 0);
 }
 
 /* ----- 詳細シート ----- */
@@ -735,6 +750,97 @@ async function sendHA(d){
   }catch(err){ toast("⚠️ 連携エラー：" + d.name + "（" + err.message + "）"); }
 }
 
+/* ========== SwitchBot（Google Apps Script の中継を通す） ========== */
+// 画面のタイル → SwitchBot の機器（設定画面で選ぶ）
+const SB_TARGETS = [
+  ["env","リビングの室温・湿度（ハブ2）"], ["tatami","畳コーナー照明"], ["aircon","リビングエアコン"], ["aircon2","寝室エアコン"],
+  ["tv","テレビ"], ["appletv","Apple TV"], ["fan","換気扇"], ["curtain","カーテン"], ["lock","玄関ロック"], ["roomba","ロボット掃除機"],
+  ["down","ダウンライト"], ["bedroom","寝室照明"]
+];
+let sbList = store.get("sh_sblist", {physical:[], ir:[]});   // 読み込んだ機器の一覧（名前を出すためだけに保存）
+async function sbCallWith(url, key, body){
+  const r = await fetchT(url, {method:"POST", body: JSON.stringify({key, ...body})}, 25000);
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || "中継でエラー");
+  return j.body;
+}
+const sbCall = body => sbCallWith(cfg.sbUrl, cfg.sbKey, body);
+function sendDev(d){ if (sbOn()) return sendSB(d); if (haOn()) return sendHA(d); }
+async function sendSB(d){
+  const id = (cfg.sbMap || {})[d.id]; if (!id) return;
+  const c = [];
+  if (d.type==="light"){ if (d.on){ c.push(["turnOn"]); if (!d.noDim) c.push(["setBrightness", String(d.level)]); } else c.push(["turnOff"]); }
+  else if (d.type==="climate"){
+    // 赤外線エアコン：setAll「温度,モード,風量,電源」 モード 2冷房 3除湿 4送風 5暖房 ／ 風量 1自動
+    const m = {cool:2, dry:3, fan_only:4, heat:5}[d.mode];
+    c.push(["setAll", `${Math.round(d.temp)},${m},1,${d.on?"on":"off"}`]);
+  }
+  else if (d.type==="switch" || d.type==="media") c.push([d.on ? "turnOn" : "turnOff"]);
+  else if (d.type==="cover") c.push([d.open ? "turnOn" : "turnOff"]);
+  else if (d.type==="lock") c.push([d.locked ? "lock" : "unlock"]);
+  else if (d.type==="vacuum") c.push([{clean:"start", pause:"stop", back:"dock", dock:"dock"}[d.st]]);
+  try{
+    for (const [command, parameter] of c){
+      const b = await sbCall({action:"command", id, command, parameter: parameter ?? "default"});
+      if (b && b.statusCode !== 100) throw new Error(b.message || ("statusCode " + b.statusCode));
+    }
+  }catch(err){ toast("⚠️ " + d.name + "：送れませんでした（" + err.message + "）"); }
+}
+// 状態を読む（実際の機器だけ。赤外線の機器は読めない）。5分ごと
+let envLive = false;
+async function sbPoll(){
+  if (!sbOn()) return;
+  const map = cfg.sbMap || {}, phys = new Set(sbList.physical.map(x => x.id));
+  const pairs = Object.entries(map).filter(([k, id]) => id && phys.has(id));
+  if (!pairs.length) return;
+  try{
+    const res = await sbCall({action:"statuses", ids:[...new Set(pairs.map(p => p[1]))]});
+    let changed = false;
+    pairs.forEach(([k, id]) => {
+      const s = res[id]; if (!s || s.statusCode !== 100 || !s.body) return;
+      const b = s.body;
+      if (k==="env" && typeof b.temperature === "number"){ cur.t = b.temperature; cur.hu = b.humidity; envLive = true; showEnv(); return; }
+      const d = D(k); if (!d) return;
+      if (d.type==="light" && b.power){ d.on = b.power === "on"; if (b.brightness && !d.noDim) d.level = b.brightness; changed = true; }
+      if (d.type==="lock" && b.lockState){ d.locked = b.lockState === "locked"; changed = true; }
+      if (d.type==="cover" && typeof b.slidePosition === "number"){ d.open = b.slidePosition < 50; changed = true; }
+    });
+    if (changed){ saveDevs(); render(); }
+  }catch(e){ /* 読めないときは次の回にもう一度 */ }
+}
+setInterval(sbPoll, 5*60*1000);
+
+function sbOptionText(x){ return `${x.name}（${x.type}）`; }
+function renderSbMap(){
+  const all = [...sbList.physical, ...sbList.ir], map = cfg.sbMap || {};
+  $("#sbMapBox").innerHTML = (all.length || Object.keys(map).length) ? SB_TARGETS.map(([k, label]) => {
+    const curId = map[k] || "";
+    const opts = all.map(x => `<option value="${x.id}" ${x.id===curId?"selected":""}>${esc(sbOptionText(x))}</option>`).join("");
+    const keep = curId && !all.some(x => x.id===curId) ? `<option value="${curId}" selected>（前に選んだ機器）</option>` : "";
+    return `<label>${label}</label><select data-sb="${k}"><option value="">つながない</option>${keep}${opts}</select>`;
+  }).join("") : "";
+}
+$("#btnSbPing").addEventListener("click", async () => {
+  const url = $("#cSbUrl").value.trim(), key = $("#cSbKey").value.trim();
+  if (!url || !key) return toast("中継のアドレスと合い言葉を入れてください");
+  try{ await sbCallWith(url, key, {action:"ping"}); toast("✅ 中継につながりました"); }
+  catch(e){ toast("⚠️ つながりません：" + e.message); }
+});
+$("#btnSbLoad").addEventListener("click", async () => {
+  const url = $("#cSbUrl").value.trim(), key = $("#cSbKey").value.trim();
+  if (!url || !key) return toast("中継のアドレスと合い言葉を入れてください");
+  try{
+    const b = await sbCallWith(url, key, {action:"devices"});
+    if (b.statusCode !== 100) throw new Error(b.message || "SwitchBot がエラーを返しました");
+    sbList = {
+      physical: (b.body.deviceList || []).map(x => ({id:x.deviceId, name:x.deviceName, type:x.deviceType})),
+      ir: (b.body.infraredRemoteList || []).map(x => ({id:x.deviceId, name:x.deviceName, type:"赤外線・" + x.remoteType}))
+    };
+    store.set("sh_sblist", sbList); renderSbMap();
+    toast(`✅ ${sbList.physical.length + sbList.ir.length}台 読み込みました。タイルごとに選んで「保存」`);
+  }catch(e){ toast("⚠️ 読み込めません：" + e.message); }
+});
+
 /* ========== シーン ========== */
 const SCENES = {
   out:   {msg:"おでかけ：消灯・エアコン停止・施錠", f(){ setLights(false); D("aircon").on=false; D("aircon2").on=false;D("lock").locked=true; D("curtain").open=false; D("tv").on=false; D("fan").on=false; }},
@@ -746,11 +852,11 @@ function setLights(on){ devs.filter(d => d.type==="light").forEach(d => d.on = o
 document.querySelectorAll("[data-scene]").forEach(b => b.addEventListener("click", () => {
   const s = SCENES[b.dataset.scene]; s.f(); saveDevs(); render(); toast(s.msg);
   b.classList.add("flash"); setTimeout(() => b.classList.remove("flash"), 900);
-  if (live()) devs.forEach(sendHA);
+  if (live()) devs.forEach(sendDev);
 }));
 $("#allOff").addEventListener("click", () => {
   setLights(false); saveDevs(); render(); toast("照明をすべて消しました");
-  if (live()) devs.filter(d => d.type==="light").forEach(sendHA);
+  if (live()) devs.filter(d => d.type==="light").forEach(sendDev);
 });
 
 /* ========== 時計 ========== */
@@ -887,6 +993,7 @@ $("#btnAlertOff").addEventListener("click", () => { pendingAlert = null; $("#cAl
 /* ========== 室温・湿度（モックのセンサー） ========== */
 const cur = {t:23.0, hu:52};   // 今は作りものの数字（本物のセンサーにつなぐまで）
 function sensorStep(){
+  if (envLive) return;   // 本物のセンサーにつながっているときは作りものを動かさない
   const ac = D("aircon");
   let t = cur.t + (Math.random()-.5)*.2, hu = cur.hu + Math.round((Math.random()-.5)*2);
   if (ac.on && ac.mode!=="fan_only") t += (ac.temp - t)*0.08;
@@ -895,6 +1002,8 @@ function sensorStep(){
   showEnv(); renderChips();
 }
 function showEnv(){
+  $("#envSrc").textContent = envLive ? "実測" : "見本";
+  $("#envSrc").classList.toggle("live", envLive);
   $("#nowT").textContent = cur.t.toFixed(1);
   $("#nowH").textContent = cur.hu;
   const c = $("#comfort");
@@ -1012,6 +1121,7 @@ function openSettings(){
   $("#cWeather").checked = cfg.weather; $("#cPlace").value = cfg.place; $("#cLat").value = cfg.lat; $("#cLon").value = cfg.lon;
   $("#cHaUrl").value = cfg.haUrl; $("#cHaToken").value = cfg.haToken; $("#cWake").checked = cfg.wake; $("#cPin").value = cfg.pin || "";
   $("#cMap").value = JSON.stringify(cfg.map, null, 2);
+  $("#cSbUrl").value = cfg.sbUrl || ""; $("#cSbKey").value = cfg.sbKey || ""; renderSbMap();
   pendingAlert = undefined; $("#cAlertQ").value = "";
   $("#cAlertNow").textContent = cfg.alert?.name || "未設定";
   $("#cAlertSel").innerHTML = `<option value="">（さがすと、ここに出ます）</option>`;
@@ -1023,6 +1133,12 @@ function readForm(){
   return {weather:$("#cWeather").checked, place:$("#cPlace").value.trim(), lat:$("#cLat").value.trim(), lon:$("#cLon").value.trim(),
     haUrl:$("#cHaUrl").value.trim(), haToken:$("#cHaToken").value.trim(), map, wake:$("#cWake").checked,
     pin:$("#cPin").value.trim().replace(/\D/g,""),
+    sbUrl:$("#cSbUrl").value.trim(), sbKey:$("#cSbKey").value.trim(),
+    sbMap: (() => {
+      const sels = [...document.querySelectorAll("#sbMapBox select[data-sb]")];
+      if (!sels.length) return cfg.sbMap || {};
+      const m = {}; sels.forEach(s => { if (s.value) m[s.dataset.sb] = s.value; }); return m;
+    })(),
     alert: (() => {
       const v = $("#cAlertSel").value;
       if (v){ const [code, office, name] = v.split("|"); return {code, office, name}; }
@@ -1034,7 +1150,8 @@ $("#btnCancel").addEventListener("click", () => $("#setModal").classList.remove(
 $("#btnSave").addEventListener("click", () => {
   const f = readForm(); if (!f) return;
   cfg = f; store.set("sh_cfg", cfg);
-  $("#setModal").classList.remove("show"); render(); loadWeather(); loadAlerts(); wake(); toast("設定を保存しました");
+  if (!sbOn()) envLive = false;
+  $("#setModal").classList.remove("show"); render(); loadWeather(); loadAlerts(); sbPoll(); wake(); toast("設定を保存しました");
 });
 $("#btnTest").addEventListener("click", async () => {
   const f = readForm(); if (!f) return;
@@ -1052,7 +1169,7 @@ $("#btnGeo").addEventListener("click", () => {
 });
 $("#btnReset").addEventListener("click", async () => {
   if (!await ask("設定・デバイス状態・買い物リストをすべて初期化しますか？")) return;
-  ["sh_cfg","sh_devs","sh_shop","sh_memo"].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+  ["sh_cfg","sh_devs","sh_shop","sh_memo","sh_sblist"].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
   location.reload();
 });
 
@@ -1109,6 +1226,7 @@ $("#btnDaily").addEventListener("click", () => setMode("daily"));
 
 showEnv();
 setMode("daily");
+sbPoll();
 // アドレスの最後に ?ring を付けて開くと、呼び出し画面の見本を出す
 if (/[?&]ring\b/.test(location.search)) ringDoor(true);
 </script>
