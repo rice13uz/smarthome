@@ -213,6 +213,8 @@ form.add[hidden]{display:none}
 #dimAlert{display:flex;gap:6px;margin-top:6px}
 #dimAlert .al{font-size:15px;opacity:.85}
 #dimHint{position:absolute;bottom:22px;font-size:14px;opacity:.6}
+#dim.off{background:#000}
+#dim.off > *{display:none}
 
 /* 幅が少し狭いとき（iPad mini の横向き 1133 など）は、上の段を小さくまとめる */
 @media (max-width:1240px) and (min-width:981px){
@@ -401,6 +403,8 @@ form.add[hidden]{display:none}
       <label>画面を消さない</label><div><input type="checkbox" id="cWake" style="width:24px;height:24px"></div>
       <label>暗くするまでの時間</label>
       <select id="cDim"><option value="30">30秒さわらないと暗くする</option><option value="60">1分</option><option value="180">3分</option><option value="600">10分</option><option value="0">暗くしない</option></select>
+      <label>画面オフの時間</label>
+      <div style="display:flex;gap:8px;align-items:center"><select id="cOffS"></select><span>〜</span><select id="cOffE"></select></div>
       <label>管理用の暗証番号</label><input id="cPin" type="password" inputmode="numeric" maxlength="8" placeholder="空欄なら暗証番号なし（数字4〜8けた）">
     </div>
     <div class="note">暗証番号は、子どもがうっかり管理用を開かないための簡単なカギです。防犯のための強いカギではありません。</div>
@@ -1148,6 +1152,9 @@ function openSettings(){
   $("#cWeather").checked = cfg.weather; $("#cPlace").value = cfg.place; $("#cLat").value = cfg.lat; $("#cLon").value = cfg.lon;
   $("#cHaUrl").value = cfg.haUrl; $("#cHaToken").value = cfg.haToken; $("#cWake").checked = cfg.wake; $("#cPin").value = cfg.pin || "";
   $("#cDim").value = String(cfg.dimSec ?? 60);
+  const hours = [`<option value="-1">オフにしない</option>`, ...Array.from({length:24}, (_, h) => `<option value="${h}">${h}時</option>`)].join("");
+  $("#cOffS").innerHTML = hours; $("#cOffE").innerHTML = hours.replace("オフにしない", "—");
+  $("#cOffS").value = String(cfg.offS ?? 1); $("#cOffE").value = String(cfg.offE ?? 6);
   $("#cMap").value = JSON.stringify(cfg.map, null, 2);
   $("#cSbUrl").value = cfg.sbUrl || ""; $("#cSbKey").value = cfg.sbKey || ""; renderSbMap();
   pendingAlert = undefined; $("#cAlertQ").value = "";
@@ -1162,6 +1169,7 @@ function readForm(){
     haUrl:$("#cHaUrl").value.trim(), haToken:$("#cHaToken").value.trim(), map, wake:$("#cWake").checked,
     pin:$("#cPin").value.trim().replace(/\D/g,""),
     sbUrl:$("#cSbUrl").value.trim(), sbKey:$("#cSbKey").value.trim(), dimSec:+$("#cDim").value,
+    offS:+$("#cOffS").value, offE:+$("#cOffE").value,
     sbMap: (() => {
       const sels = [...document.querySelectorAll("#sbMapBox select[data-sb]")];
       if (!sels.length) return cfg.sbMap || {};
@@ -1179,7 +1187,8 @@ $("#btnSave").addEventListener("click", () => {
   const f = readForm(); if (!f) return;
   cfg = f; store.set("sh_cfg", cfg);
   if (!sbOn()) envLive = false;
-  $("#setModal").classList.remove("show"); render(); loadWeather(); loadAlerts(); sbPoll(); wake(); armDim(); toast("設定を保存しました");
+  offNow = false; $("#dim").classList.remove("off");
+  $("#setModal").classList.remove("show"); render(); loadWeather(); loadAlerts(); sbPoll(); wake(); armDim(); checkOff(); toast("設定を保存しました");
 });
 $("#btnTest").addEventListener("click", async () => {
   const f = readForm(); if (!f) return;
@@ -1210,7 +1219,7 @@ $("#btnFull").addEventListener("click", () => {
 let wl = null;
 async function wake(){
   try{
-    if (cfg.wake && "wakeLock" in navigator){ if (!wl) { wl = await navigator.wakeLock.request("screen"); wl.addEventListener("release", ()=> wl = null); } }
+    if (cfg.wake && "wakeLock" in navigator && !(typeof isOffTime === "function" && isOffTime())){ if (!wl) { wl = await navigator.wakeLock.request("screen"); wl.addEventListener("release", ()=> wl = null); } }
     else if (wl){ await wl.release(); wl = null; }
   }catch(e){}
 }
@@ -1265,8 +1274,24 @@ function showDim(){
   fillDim();
   const h = new Date().getHours();
   $("#dim").classList.toggle("night", h >= 22 || h < 6);   // 夜はさらに暗く
+  $("#dim").classList.toggle("off", isOffTime());           // 画面オフの時間は真っ黒
   $("#dim").classList.add("show");
 }
+// 画面オフの時間か（最初は 1時〜6時。日をまたぐ指定もできる）
+function isOffTime(){
+  const s = cfg.offS ?? 1, e = cfg.offE ?? 6;
+  if (s < 0 || e < 0 || s === e) return false;
+  const h = new Date().getHours();
+  return s < e ? (h >= s && h < e) : (h >= s || h < e);
+}
+// 1分ごとに見て、オフの時間に入ったら真っ黒にして「画面を消さない」を止める（タブレットの消灯時間で本当に消える）
+let offNow = false;
+function checkOff(){
+  const o = isOffTime();
+  if (o && !offNow){ offNow = true; showDim(); wake(); }
+  else if (!o && offNow){ offNow = false; $("#dim").classList.remove("off"); wake(); armDim(); }
+}
+setInterval(checkOff, 60*1000);
 function fillDim(){
   $("#dimTime").textContent = $("#time").textContent;
   $("#dimDate").textContent = $("#date").textContent;
@@ -1278,6 +1303,7 @@ $("#dim").addEventListener("click", e => { e.stopPropagation(); hideDim(); });
 ["pointerdown","keydown"].forEach(ev => document.addEventListener(ev, () => { if (!$("#dim").classList.contains("show")) armDim(); }, true));
 setInterval(() => { if ($("#dim").classList.contains("show")) fillDim(); }, 15*1000);
 armDim();
+checkOff();
 
 showEnv();
 setMode("daily");
